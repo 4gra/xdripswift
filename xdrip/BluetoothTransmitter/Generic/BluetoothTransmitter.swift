@@ -12,6 +12,9 @@ class BluetoothTransmitter: NSObject, CBCentralManagerDelegate, CBPeripheralDele
     /// variable : it can get a new value during app run, will be used by rootviewcontroller's that want to receive info
     public weak var bluetoothTransmitterDelegate: BluetoothTransmitterDelegate?
 
+    /// CBCentralManagerOptionRestoreIdentifierKey to use when initializing the central manager
+    public let cBCentralManagerRestoreIdentifierKey: String
+
     // MARK: - private properties
     
     /// the address of the transmitter. If nil then transmitter never connected, so we don't know the address.
@@ -69,7 +72,8 @@ class BluetoothTransmitter: NSObject, CBCentralManagerDelegate, CBPeripheralDele
     ///     - CBUUID_ReceiveCharacteristic: receive characteristic uuid
     ///     - CBUUID_WriteCharacteristic: write characteristic uuid
     ///     - bluetoothTransmitterDelegate : a BluetoothTransmitterDelegate
-    init(addressAndName:BluetoothTransmitter.DeviceAddressAndName, CBUUID_Advertisement:String?, servicesCBUUIDs:[CBUUID], CBUUID_ReceiveCharacteristic:String, CBUUID_WriteCharacteristic:String, bluetoothTransmitterDelegate: BluetoothTransmitterDelegate) {
+    ///     - cBCentralManagerRestoreIdentifierKey : CBCentralManagerOptionRestoreIdentifierKey to use when initializing the central manager
+    init(addressAndName:BluetoothTransmitter.DeviceAddressAndName, CBUUID_Advertisement:String?, servicesCBUUIDs:[CBUUID], CBUUID_ReceiveCharacteristic:String, CBUUID_WriteCharacteristic:String, bluetoothTransmitterDelegate: BluetoothTransmitterDelegate, cBCentralManagerRestoreIdentifierKey: String?) {
         
         switch addressAndName {
             
@@ -93,6 +97,17 @@ class BluetoothTransmitter: NSObject, CBCentralManagerDelegate, CBPeripheralDele
         
         // assign bluetoothTransmitterDelegate
         self.bluetoothTransmitterDelegate = bluetoothTransmitterDelegate
+        
+        // assign cBCentralManagerRestoreIdentifierKey, if there was no value in the init function, then assign a new random value here
+        if let cBCentralManagerRestoreIdentifierKey = cBCentralManagerRestoreIdentifierKey {
+
+            self.cBCentralManagerRestoreIdentifierKey = cBCentralManagerRestoreIdentifierKey
+            
+        } else {
+
+            self.cBCentralManagerRestoreIdentifierKey = String((0..<24).map{ _ in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".randomElement()!})
+
+        }
         
         super.init()
 
@@ -497,6 +512,19 @@ class BluetoothTransmitter: NSObject, CBCentralManagerDelegate, CBPeripheralDele
         }
         
     }
+    
+    func centralManager(_ central: CBCentralManager,
+                        willRestoreState dict: [String : Any]) {
+        
+        trace("in wilRestoreState", log: log, category: ConstantsLog.categoryBlueToothTransmitter, type: .info)
+        
+      /*  let peripherals = dict[CBCentralManagerRestoredStatePeripheralsKey]
+        dictionary
+        if peripherals.co > 0 {
+            
+        }*/
+        
+    }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
 
@@ -521,7 +549,7 @@ class BluetoothTransmitter: NSObject, CBCentralManagerDelegate, CBPeripheralDele
     // MARK: - helpers
     
     private func initialize() {
-        centralManager = CBCentralManager(delegate: self, queue: nil, options: [CBCentralManagerOptionShowPowerAlertKey: true])
+        centralManager = CBCentralManager(delegate: self, queue: nil, options: [CBCentralManagerOptionShowPowerAlertKey: true, CBCentralManagerOptionRestoreIdentifierKey: cBCentralManagerRestoreIdentifierKey])
     }
     
     // MARK: - enum's

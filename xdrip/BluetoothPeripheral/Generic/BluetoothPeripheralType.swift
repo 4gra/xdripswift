@@ -100,7 +100,7 @@ enum BluetoothPeripheralType: String, CaseIterable {
         
     }
     
-    func createNewBluetoothPeripheral(withAddress address: String, withName name: String, nsManagedObjectContext: NSManagedObjectContext) -> BluetoothPeripheral {
+    func createNewBluetoothPeripheral(withAddress address: String, withName name: String, nsManagedObjectContext: NSManagedObjectContext, cBCentralManagerRestoreIdentifierKey: String) -> BluetoothPeripheral {
     
         switch self {
             
@@ -167,7 +167,7 @@ enum BluetoothPeripheralType: String, CaseIterable {
             
         case .AtomType:
             
-            return Atom(address: address, name: name, alias: nil, nsManagedObjectContext: nsManagedObjectContext)
+            return Atom(address: address, name: name, alias: nil, cBCentralManagerRestoreIdentifierKey: cBCentralManagerRestoreIdentifierKey, nsManagedObjectContext: nsManagedObjectContext)
             
         }
         

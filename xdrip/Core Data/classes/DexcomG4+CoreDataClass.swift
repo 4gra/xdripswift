@@ -14,7 +14,7 @@ public class DexcomG4: NSManagedObject {
         
         super.init(entity: entity, insertInto: nsManagedObjectContext)
         
-        blePeripheral = BLEPeripheral(address: address, name: name, alias: nil, nsManagedObjectContext: nsManagedObjectContext)
+        blePeripheral = BLEPeripheral(address: address, name: name, alias: nil, cBCentralManagerRestoreIdentifierKey: "DexcomG4", nsManagedObjectContext: nsManagedObjectContext)
     }
     
     private override init(entity: NSEntityDescription, insertInto context: NSManagedObjectContext?) {

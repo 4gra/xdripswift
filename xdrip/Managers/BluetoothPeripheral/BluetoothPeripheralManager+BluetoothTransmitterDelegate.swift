@@ -154,7 +154,14 @@ extension BluetoothPeripheralManager: BluetoothTransmitterDelegate {
             
             // set lastConnectionStatusChangeTimeStamp in blePeripheral to now
             if let bluetoothPeripheral = getBluetoothPeripheral(for: bluetoothTransmitter) {
+                
                 bluetoothPeripheral.blePeripheral.lastConnectionStatusChangeTimeStamp = Date()
+                
+                // possibly it's a BlePeripheral created in or before version 4.5.23, first time a higher version of the app starts, there's no value yet, so let's store it
+                // later (when 4.5.23 is not used anymore) it should be ok to delete next statement
+                debuglogging("assigning cBCentralManagerRestoreIdentifierKey to " + bluetoothTransmitter.deviceName! + ", value = " + bluetoothTransmitter.cBCentralManagerRestoreIdentifierKey)
+                bluetoothPeripheral.blePeripheral.cBCentralManagerRestoreIdentifierKey = bluetoothTransmitter.cBCentralManagerRestoreIdentifierKey
+                
             }
             
             return
@@ -220,7 +227,7 @@ extension BluetoothPeripheralManager: BluetoothTransmitterDelegate {
         trace("in didconnect to, going to create a new bluetoothperipheral", log: log, category: ConstantsLog.categoryBluetoothPeripheralManager, type: .info)
         
         // create bluetoothPeripheral
-        let newBluetoothPeripheral = getTransmitterType(for: tempBlueToothTransmitterWhileScanningForNewBluetoothPeripheral).createNewBluetoothPeripheral(withAddress: deviceAddressNewTransmitter, withName: deviceNameNewTransmitter, nsManagedObjectContext: coreDataManager.mainManagedObjectContext)
+        let newBluetoothPeripheral = getTransmitterType(for: tempBlueToothTransmitterWhileScanningForNewBluetoothPeripheral).createNewBluetoothPeripheral(withAddress: deviceAddressNewTransmitter, withName: deviceNameNewTransmitter, nsManagedObjectContext: coreDataManager.mainManagedObjectContext, cBCentralManagerRestoreIdentifierKey: bluetoothTransmitter.cBCentralManagerRestoreIdentifierKey)
         
         trace("in didconnect to, created a new bluetoothperipheral", log: log, category: ConstantsLog.categoryBluetoothPeripheralManager, type: .info)
         

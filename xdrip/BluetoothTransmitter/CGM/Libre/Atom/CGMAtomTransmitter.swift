@@ -75,7 +75,8 @@ class CGMAtomTransmitter:BluetoothTransmitter, CGMTransmitter {
     ///     - cGMAtomTransmitterDelegate : a CGMAtomTransmitterDelegate
     ///     - firmWare : firmWare if known
     ///     - sensorSerialNumber : sensor serial number, if nil then it's not yet known
-    init(address:String?, name: String?, bluetoothTransmitterDelegate: BluetoothTransmitterDelegate, cGMAtomTransmitterDelegate : CGMAtomTransmitterDelegate, cGMTransmitterDelegate:CGMTransmitterDelegate,  sensorSerialNumber:String?, webOOPEnabled: Bool?, nonFixedSlopeEnabled: Bool?, firmWare: String?) {
+    ///     - cBCentralManagerRestoreIdentifierKey : CBCentralManagerRestoreIdentifierKey to use, if nil then this is for a new transmitter, one will be assigned during the scanning process
+    init(address:String?, name: String?, bluetoothTransmitterDelegate: BluetoothTransmitterDelegate, cGMAtomTransmitterDelegate : CGMAtomTransmitterDelegate, cGMTransmitterDelegate:CGMTransmitterDelegate,  sensorSerialNumber:String?, webOOPEnabled: Bool?, nonFixedSlopeEnabled: Bool?, firmWare: String?, cBCentralManagerRestoreIdentifierKey: String?) {
         
         // assign addressname and name or expected devicename
         var newAddressAndName:BluetoothTransmitter.DeviceAddressAndName = BluetoothTransmitter.DeviceAddressAndName.notYetConnected(expectedName: expectedDeviceNameAtom)
@@ -108,7 +109,7 @@ class CGMAtomTransmitter:BluetoothTransmitter, CGMTransmitter {
         // initiliaze LibreDataParser
         self.libreDataParser = LibreDataParser()
         
-        super.init(addressAndName: newAddressAndName, CBUUID_Advertisement: nil, servicesCBUUIDs: [CBUUID(string: CBUUID_Service_Atom)], CBUUID_ReceiveCharacteristic: CBUUID_ReceiveCharacteristic_Atom, CBUUID_WriteCharacteristic: CBUUID_WriteCharacteristic_Atom, bluetoothTransmitterDelegate: bluetoothTransmitterDelegate)
+        super.init(addressAndName: newAddressAndName, CBUUID_Advertisement: nil, servicesCBUUIDs: [CBUUID(string: CBUUID_Service_Atom)], CBUUID_ReceiveCharacteristic: CBUUID_ReceiveCharacteristic_Atom, CBUUID_WriteCharacteristic: CBUUID_WriteCharacteristic_Atom, bluetoothTransmitterDelegate: bluetoothTransmitterDelegate, cBCentralManagerRestoreIdentifierKey: cBCentralManagerRestoreIdentifierKey)
         
     }
     

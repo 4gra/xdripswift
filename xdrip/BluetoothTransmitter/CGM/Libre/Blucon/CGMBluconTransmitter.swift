@@ -108,7 +108,7 @@ class CGMBluconTransmitter: BluetoothTransmitter {
         self.libreDataParser = LibreDataParser()
 
         // initialize
-        super.init(addressAndName: newAddressAndName, CBUUID_Advertisement: nil, servicesCBUUIDs: [CBUUID(string: CBUUID_BluconService)], CBUUID_ReceiveCharacteristic: CBUUID_ReceiveCharacteristic_Blucon, CBUUID_WriteCharacteristic: CBUUID_WriteCharacteristic_Blucon, bluetoothTransmitterDelegate: bluetoothTransmitterDelegate)
+        super.init(addressAndName: newAddressAndName, CBUUID_Advertisement: nil, servicesCBUUIDs: [CBUUID(string: CBUUID_BluconService)], CBUUID_ReceiveCharacteristic: CBUUID_ReceiveCharacteristic_Blucon, CBUUID_WriteCharacteristic: CBUUID_WriteCharacteristic_Blucon, bluetoothTransmitterDelegate: bluetoothTransmitterDelegate, cBCentralManagerRestoreIdentifierKey: nil)
 
         //assign CGMTransmitterDelegate
         cgmTransmitterDelegate = cGMTransmitterDelegate

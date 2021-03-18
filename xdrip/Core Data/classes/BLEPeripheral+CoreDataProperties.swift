@@ -69,6 +69,9 @@ extension BLEPeripheral {
     
     /// sensorSerialNumber of last sensor that was read
     @NSManaged public var sensorSerialNumber: String?
+    
+    /// CBCentralManagerOptionRestoreIdentifierKey to use when initializing the central manager
+    @NSManaged public var cBCentralManagerRestoreIdentifierKey: String?
 
     /// timestamp when connection changed to connected or not connected
     @NSManaged public var lastConnectionStatusChangeTimeStamp: Date?

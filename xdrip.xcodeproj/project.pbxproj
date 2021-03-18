@@ -1182,6 +1182,7 @@
 		F8BECB01235CE3E20060DAE1 /* BloodGlucoseChartView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BloodGlucoseChartView.swift; sourceTree = "<group>"; };
 		F8BECB04235CE5D80060DAE1 /* GlucoseChartManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GlucoseChartManager.swift; sourceTree = "<group>"; };
 		F8BECB11235CEA9B0060DAE1 /* TimeInterval.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeInterval.swift; sourceTree = "<group>"; };
+		F8C4DF292603BDA000B91BC3 /* xdrip v17.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "xdrip v17.xcdatamodel"; sourceTree = "<group>"; };
 		F8C5EBE622F38F0E00563B5F /* Trace.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Trace.swift; sourceTree = "<group>"; };
 		F8C5EBEE22F5A52800563B5F /* pt */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = pt; path = pt.lproj/Common.strings; sourceTree = "<group>"; };
 		F8C9784C2428052D00A09483 /* CGMSensorType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CGMSensorType.swift; sourceTree = "<group>"; };
@@ -4174,13 +4175,14 @@
 		F85FF3C2252D0C32004E6FF1 /* xdrip.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				F8C4DF292603BDA000B91BC3 /* xdrip v17.xcdatamodel */,
 				F8A2BC0225D9D471001D1E78 /* xdrip v16.xcdatamodel */,
 				F87F5EFD2560686C00FFA395 /* xdrip v15.xcdatamodel */,
 				F83275882546225400D305E6 /* xdrip v14.xcdatamodel */,
 				F85FF3CB252F9C9A004E6FF1 /* xdrip v13.xcdatamodel */,
 				F85FF3C3252D0C32004E6FF1 /* xdrip v12.xcdatamodel */,
 			);
-			currentVersion = F8A2BC0225D9D471001D1E78 /* xdrip v16.xcdatamodel */;
+			currentVersion = F8C4DF292603BDA000B91BC3 /* xdrip v17.xcdatamodel */;
 			path = xdrip.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

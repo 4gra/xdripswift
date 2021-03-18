@@ -30,7 +30,7 @@ public class M5Stack: NSManagedObject {
         
         super.init(entity: entity, insertInto: nsManagedObjectContext)
         
-        blePeripheral = BLEPeripheral(address: address, name: name, alias: nil, nsManagedObjectContext: nsManagedObjectContext)
+        blePeripheral = BLEPeripheral(address: address, name: name, alias: nil, cBCentralManagerRestoreIdentifierKey: "M5Stack", nsManagedObjectContext: nsManagedObjectContext)
 
         self.textcolor = Int32(textColor.rawValue)
         self.backGroundColor = Int32(backGroundColor.rawValue)

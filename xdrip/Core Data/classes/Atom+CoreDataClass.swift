@@ -11,25 +11,25 @@ public class Atom: NSManagedObject {
     
     /// create Atom
     /// - parameters:
-    init(address: String, name: String, alias: String?, nsManagedObjectContext:NSManagedObjectContext) {
+    init(address: String, name: String, alias: String?, cBCentralManagerRestoreIdentifierKey: String, nsManagedObjectContext:NSManagedObjectContext) {
         
         let entity = NSEntityDescription.entity(forEntityName: "Atom", in: nsManagedObjectContext)!
         
         super.init(entity: entity, insertInto: nsManagedObjectContext)
         
-        blePeripheral = BLEPeripheral(address: address, name: name, alias: nil, nsManagedObjectContext: nsManagedObjectContext)
+        blePeripheral = BLEPeripheral(address: address, name: name, alias: nil, cBCentralManagerRestoreIdentifierKey: cBCentralManagerRestoreIdentifierKey, nsManagedObjectContext: nsManagedObjectContext)
         
     }
     
     /// create Atom
     /// - parameters:
-    init(address: String, name: String, alias: String?, sensorSerialNumber: String?, webOOPEnabled: Bool, nsManagedObjectContext:NSManagedObjectContext) {
+    init(address: String, name: String, alias: String?, sensorSerialNumber: String?, webOOPEnabled: Bool, cBCentralManagerRestoreIdentifierKey: String, nsManagedObjectContext:NSManagedObjectContext) {
         
         let entity = NSEntityDescription.entity(forEntityName: "Atom", in: nsManagedObjectContext)!
         
         super.init(entity: entity, insertInto: nsManagedObjectContext)
         
-        blePeripheral = BLEPeripheral(address: address, name: name, alias: nil, nsManagedObjectContext: nsManagedObjectContext)
+        blePeripheral = BLEPeripheral(address: address, name: name, alias: nil, cBCentralManagerRestoreIdentifierKey: cBCentralManagerRestoreIdentifierKey, nsManagedObjectContext: nsManagedObjectContext)
         
         blePeripheral.webOOPEnabled = webOOPEnabled
         

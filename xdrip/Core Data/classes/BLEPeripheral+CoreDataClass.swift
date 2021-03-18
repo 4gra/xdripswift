@@ -11,7 +11,7 @@ public class BLEPeripheral: NSManagedObject {
     public var libreSensorType: LibreSensorType?
 
     /// create BLEPeripheral, shouldconnect default value = true
-    init(address: String, name: String, alias: String?, nsManagedObjectContext:NSManagedObjectContext) {
+    init(address: String, name: String, alias: String?, cBCentralManagerRestoreIdentifierKey: String, nsManagedObjectContext:NSManagedObjectContext) {
         
         let entity = NSEntityDescription.entity(forEntityName: "BLEPeripheral", in: nsManagedObjectContext)!
 
@@ -22,11 +22,12 @@ public class BLEPeripheral: NSManagedObject {
         self.shouldconnect = true
         self.alias = alias
         self.parameterUpdateNeededAtNextConnect = false
+        self.cBCentralManagerRestoreIdentifierKey = cBCentralManagerRestoreIdentifierKey
      
         webOOPEnabled = ConstantsLibre.defaultWebOOPEnabled
         
         nonFixedSlopeEnabled = ConstantsLibre.defaultNonFixedSlopeEnabled
-        
+
     }
     
     private override init(entity: NSEntityDescription, insertInto context: NSManagedObjectContext?) {

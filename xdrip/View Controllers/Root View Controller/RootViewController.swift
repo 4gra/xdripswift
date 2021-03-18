@@ -566,11 +566,18 @@ final class RootViewController: UIViewController {
         
     }
     
+    var crashcreatior = 0
+    
     /// process new glucose data received from transmitter.
     /// - parameters:
     ///     - glucoseData : array with new readings
     ///     - sensorTimeInMinutes : should be present only if it's the first reading(s) being processed for a specific sensor and is needed if it's a transmitterType that returns true to the function canDetectNewSensor
     private func processNewGlucoseData(glucoseData: inout [GlucoseData], sensorTimeInMinutes: Int?) {
+        
+        // force a crash
+        crashcreatior = crashcreatior + 1
+        crashcreatior = crashcreatior % 3
+        let crash = 10/crashcreatior
         
         // unwrap calibrationsAccessor and coreDataManager and cgmTransmitter
         guard let calibrationsAccessor = calibrationsAccessor, let coreDataManager = coreDataManager, let cgmTransmitter = bluetoothPeripheralManager?.getCGMTransmitter() else {
