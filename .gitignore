@@ -1,7 +1,16 @@
+#######
+# config files, to be edited by developer 
+xDripConfigOverride.xcconfig
+
 .DS_Store
 UserInterfaceState.xcuserstate
 iBreakpoints_v2.xcbkptlist
 xdrip.xcodeproj/xcuserdata/johandegraeve.xcuserdatad/xcdebugger/
+Package.resolved
+
+# Ruby version settings
+.ruby-version
+.ruby-gemset
 
 #####
 # OS X temporary files that should never be committed
@@ -108,3 +117,8 @@ xcuserdata
 
 # wiki
 xdripswift.wiki/
+
+# file to edit commit message
+commit.txt
+
+*.bak

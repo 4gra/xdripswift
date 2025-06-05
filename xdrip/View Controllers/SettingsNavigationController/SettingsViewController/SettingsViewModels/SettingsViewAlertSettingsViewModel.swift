@@ -71,9 +71,9 @@ struct SettingsViewAlertSettingsViewModel:SettingsViewModelProtocol {
             
             // define and set the content
             let content = UNMutableNotificationContent()
-            // body and title will not be shown, so contents can be empty
-            content.body = ""
-            content.title = ""
+            // body and title will not be shown, because app is in the foreground
+            content.body = "will not be shown"
+            content.title = "will not be shown"
             // sound
             content.sound = UNNotificationSound.init(named: UNNotificationSoundName.init("xdripalert.aif"))
             // notification request
@@ -89,7 +89,7 @@ struct SettingsViewAlertSettingsViewModel:SettingsViewModelProtocol {
     func storeRowReloadClosure(rowReloadClosure: ((Int) -> Void)) {}
     
     func sectionTitle() -> String? {
-        return Texts_SettingsView.sectionTitleAlerting
+        return ConstantsSettingsIcons.alertSettingsIcon + " " + Texts_SettingsView.sectionTitleAlerting
     }
     
     func numberOfRows() -> Int {

@@ -20,7 +20,7 @@ final class WatlaaBluetoothTransmitter: BluetoothTransmitter {
     let CBUUID_Battery_Service = "0000180F-0000-1000-8000-00805F9B34FB"
     
     /// characteristic uuids (created them in an enum as there's a lot of them, it's easy to switch through the list)
-    private enum CBUUID_Characteristic_UUID:String, CustomStringConvertible, CaseIterable {
+    public enum CBUUID_Characteristic_UUID:String, CustomStringConvertible, CaseIterable {
         
         /// Bridge connection status characteristic
         case CBUUID_BridgeConnectionStatus_Characteristic = "00001012-1212-EFDE-0137-875F45AC0113"
@@ -286,7 +286,7 @@ final class WatlaaBluetoothTransmitter: BluetoothTransmitter {
                     if rxBuffer.count >= 363  {
                         trace("in peripheral didUpdateValueFor, Buffer complete", log: log, category: ConstantsLog.categoryWatlaa, type: .info)
                         
-                        if (Crc.LibreCrc(data: &rxBuffer, headerOffset: miaoMiaoHeaderLength)) {
+                        if (Crc.LibreCrc(data: &rxBuffer, headerOffset: miaoMiaoHeaderLength, libreSensorType: nil)) {
 
                             // get batteryPercentage
                             let batteryPercentage = Int(rxBuffer[13])
@@ -303,7 +303,8 @@ final class WatlaaBluetoothTransmitter: BluetoothTransmitter {
                                     trace("    new sensor detected :  %{public}@", log: log, category: ConstantsLog.categoryWatlaa, type: .info, libreSensorSerialNumber.serialNumber)
                                     
                                     // inform delegate about new sensor detected
-                                    cgmTransmitterDelegate?.newSensorDetected()
+                                    // assign sensorStartDate, for this type of transmitter the sensorAge is passed in another call to cgmTransmitterDelegate
+                                    cgmTransmitterDelegate?.newSensorDetected(sensorStartDate: nil)
                                     
                                     watlaaBluetoothTransmitterDelegate?.received(serialNumber: libreSensorSerialNumber.serialNumber, from: self)
                                     
@@ -315,7 +316,7 @@ final class WatlaaBluetoothTransmitter: BluetoothTransmitter {
                             watlaaBluetoothTransmitterDelegate?.received(transmitterBatteryLevel: batteryPercentage, watlaaBluetoothTransmitter: self)
                             
                             // send batteryPercentage to delegate
-                            cgmTransmitterDelegate?.cgmTransmitterInfoReceived(glucoseData: &emptyArray, transmitterBatteryInfo: TransmitterBatteryInfo.percentage(percentage: batteryPercentage), sensorTimeInMinutes: nil)
+                            cgmTransmitterDelegate?.cgmTransmitterInfoReceived(glucoseData: &emptyArray, transmitterBatteryInfo: TransmitterBatteryInfo.percentage(percentage: batteryPercentage), sensorAge: nil)
                             
                             libreDataParser.libreDataProcessor(libreSensorSerialNumber: LibreSensorSerialNumber(withUID: Data(rxBuffer.subdata(in: 5..<13)), with: nil)?.serialNumber, patchInfo: nil, webOOPEnabled: webOOPEnabled, libreData: (rxBuffer.subdata(in: miaoMiaoHeaderLength..<(344 + miaoMiaoHeaderLength))), cgmTransmitterDelegate: cgmTransmitterDelegate, dataIsDecryptedToLibre1Format: false, testTimeStamp: nil, completionHandler:  { (sensorState: LibreSensorState?, xDripError: XdripError?) in
                                 
@@ -350,8 +351,10 @@ final class WatlaaBluetoothTransmitter: BluetoothTransmitter {
                     // not sure if watlaa will ever send this, and if so if it will handle the response correctly
                     // this is copied from MiaoMiao
                     trace("in peripheral didUpdateValueFor, new sensor detected", log: log, category: ConstantsLog.categoryWatlaa, type: .info)
-                    cgmTransmitterDelegate?.newSensorDetected()
-                    
+
+                    // assign sensorStartDate, for this type of transmitter the sensorAge is passed in another call to cgmTransmitterDelegate
+                    cgmTransmitterDelegate?.newSensorDetected(sensorStartDate: nil)
+
                     // send 0xD3 and 0x01 to confirm sensor change as defined in MiaoMiao protocol documentation
                     // after that send start reading command, each with delay of 500 milliseconds
                     DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + .milliseconds(500)) {

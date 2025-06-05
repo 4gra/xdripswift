@@ -68,7 +68,7 @@ class DexcomShareUploadManager:NSObject {
     /// uploads latest BgReadings to Dexcom Share
     /// - parameters:
     ///     - lastConnectionStatusChangeTimeStamp : when was the last transmitter dis/reconnect - if nil then  1 1 1970 is used
-    public func upload(lastConnectionStatusChangeTimeStamp: Date?) {
+    public func uploadLatestBgReadings(lastConnectionStatusChangeTimeStamp: Date?) {
         
         // check if dexcomShare is enabled
         guard UserDefaults.standard.uploadReadingstoDexcomShare else {
@@ -84,7 +84,7 @@ class DexcomShareUploadManager:NSObject {
         
         // check if accountname and password and serial number exist
         guard UserDefaults.standard.dexcomShareSerialNumber != nil, UserDefaults.standard.dexcomShareAccountName != nil, UserDefaults.standard.dexcomSharePassword != nil else {
-            trace("in upload, not master, no upload", log: self.log, category: ConstantsLog.categoryDexcomShareUploadManager, type: .info)
+            trace("in upload, dexcomShareSerialNumber or dexcomShareAccountName or dexcomSharePassword is nil", log: self.log, category: ConstantsLog.categoryDexcomShareUploadManager, type: .info)
             return
         }
         
@@ -92,6 +92,9 @@ class DexcomShareUploadManager:NSObject {
         if UserDefaults.standard.dexcomShareUseSchedule {
             if let schedule = UserDefaults.standard.dexcomShareSchedule {
                 if !schedule.indicatesOn(forWhen: Date()) {
+                    
+                    trace("in upload, schedule indicates not on", log: self.log, category: ConstantsLog.categoryDexcomShareUploadManager, type: .info)
+                    
                     return
                 }
             }
@@ -126,7 +129,7 @@ class DexcomShareUploadManager:NSObject {
                                         trace("in observeValue, start upload", log: self.log, category: ConstantsLog.categoryDexcomShareUploadManager, type: .info)
                                         
                                         // set lastConnectionStatusChangeTimeStamp to as late as possible, to make sure that the most recent reading is uploaded if user is testing the credentials
-                                        self.upload(lastConnectionStatusChangeTimeStamp: Date())
+                                        self.uploadLatestBgReadings(lastConnectionStatusChangeTimeStamp: Date())
                                         
                                     } else {
                                         trace("in observeValue, Dexcom Share credential check failed", log: self.log, category: ConstantsLog.categoryDexcomShareUploadManager, type: .error)
@@ -157,7 +160,7 @@ class DexcomShareUploadManager:NSObject {
                                             trace("in observeValue, start upload", log: self.log, category: ConstantsLog.categoryDexcomShareUploadManager, type: .info)
                                             
                                             // set lastConnectionStatusChangeTimeStamp to as late as possible, to make sure that the most recent reading is uploaded if user is testing the credentials
-                                            self.upload(lastConnectionStatusChangeTimeStamp: Date())
+                                            self.uploadLatestBgReadings(lastConnectionStatusChangeTimeStamp: Date())
                                             
                                         } else {
                                             
@@ -663,7 +666,7 @@ class DexcomShareUploadManager:NSObject {
     /// calls messageHandler with title and errorMessage. Title text will depend on success.
     private func callMessageHandler(withCredentialVerificationResult success:Bool, errorMessage:String?) {
         // define the title text
-        var title = Texts_DexcomShareTestResult.verificationSuccessFulAlertTitle
+        var title = Texts_DexcomShareTestResult.verificationSuccessfulAlertTitle
         if !success {
             title = Texts_DexcomShareTestResult.verificationErrorAlertTitle
         }
@@ -672,7 +675,7 @@ class DexcomShareUploadManager:NSObject {
         
         
         // define the message text
-        var message = Texts_DexcomShareTestResult.verificationSuccessFulAlertBody
+        var message = Texts_DexcomShareTestResult.verificationSuccessfulAlertBody
         if !success {
             if let errorMessage = errorMessage {
                 message = errorMessage

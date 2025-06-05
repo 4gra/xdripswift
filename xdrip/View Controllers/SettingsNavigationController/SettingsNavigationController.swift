@@ -32,6 +32,10 @@ final class SettingsNavigationController: UINavigationController {
         super.viewDidLoad()
         
         delegate = self
+        
+        // make sure that the developer settings are hidden when the navigation controller is loaded
+        // this is needed in case the app was previously force-closed (or crashed) before the timer had a chance to hide them again
+        UserDefaults.standard.showDeveloperSettings = false
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -41,6 +45,12 @@ final class SettingsNavigationController: UINavigationController {
         
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+    
+        // restrict rotation of this Navigation Controller to just portrait
+        (UIApplication.shared.delegate as! AppDelegate).restrictRotation = .portrait
+        
+    }
 
 }
 

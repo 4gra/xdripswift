@@ -8,12 +8,48 @@ enum Texts_HomeView {
         return NSLocalizedString("presnooze", tableName: filename, bundle: Bundle.main, value: "Snooze", comment: "Text in button on home screen")
     }()
     
+    static let snoozeAllTitle:String = {
+        return NSLocalizedString("snoozeAllTitle", tableName: filename, bundle: Bundle.main, value: "Snooze All Alarms", comment: "snooze all text in snooze screen")
+    }()
+    
+    static let snoozeAllDisabled:String = {
+        return NSLocalizedString("snoozeAllDisabled", tableName: filename, bundle: Bundle.main, value: "No urgent alarms are snoozed", comment: "no urgent alarms are snoozed text in snooze screen")
+    }()
+    
+    static let snoozeAllSnoozed:String = {
+        return NSLocalizedString("snoozeAllSnoozedUntil", tableName: filename, bundle: Bundle.main, value: "All alarms are snoozed!", comment: "snooze all text in snooze screen")
+    }()
+    
+    static let snoozeAllSnoozedUntil:String = {
+        return NSLocalizedString("snoozeAllSnoozedUntil", tableName: filename, bundle: Bundle.main, value: "All alarms are snoozed until", comment: "snooze all until text in snooze screen")
+    }()
+    
+    static let snoozeUrgentAlarms:String = {
+        return NSLocalizedString("snoozeUrgentAlarms", tableName: filename, bundle: Bundle.main, value: "Some urgent alarms are snoozed", comment: "text to inform that some of the urgent alarms are snoozed")
+    }()
+    
     static let sensor:String = {
         return NSLocalizedString("sensor", tableName: filename, bundle: Bundle.main, value: "Sensor", comment: "Literally 'Sensor', used as name in the button in the home screen, but also in text in pop ups")
     }()
     
     static let calibrationButton:String = {
         return NSLocalizedString("calibrate", tableName: filename, bundle: Bundle.main, value: "Calibrate", comment: "Text in button on home screen")
+    }()
+    
+    static let lockButton:String = {
+        return NSLocalizedString("lock", tableName: filename, bundle: Bundle.main, value: "Lock", comment: "Text in button on home screen")
+    }()
+    
+    static let unlockButton:String = {
+        return NSLocalizedString("unlock", tableName: filename, bundle: Bundle.main, value: "Unlock", comment: "Text in button on home screen")
+    }()
+    
+    static let screenLockTitle:String = {
+        return NSLocalizedString("screenlocktitle", tableName: filename, bundle: Bundle.main, value: "Screen Lock Enabled", comment: "Screen Lock Title")
+    }()
+    
+    static let screenLockInfo:String = {
+        return NSLocalizedString("screenlockinfo", tableName: filename, bundle: Bundle.main, value: "This will keep the screen awake until you move to another app or click Unlock.\r\n\nIt is recommended that you keep the phone plugged into a charger to prevent battery drain.", comment: "Info message to explain screen lock function")
     }()
     
     static let statusActionTitle:String = {
@@ -57,7 +93,19 @@ enum Texts_HomeView {
     }()
    
     static let sensorStart:String = {
-        return NSLocalizedString("sensorstart", tableName: filename, bundle: Bundle.main, value: "Sensor Start", comment: "status info : literally 'Sensor Start'")
+        return NSLocalizedString("sensorstart", tableName: filename, bundle: Bundle.main, value: "Sensor Started", comment: "status info : literally 'Sensor Start'")
+    }()
+    
+    static let sensorDuration:String = {
+        return NSLocalizedString("sensorDuration", tableName: filename, bundle: Bundle.main, value: "Sensor Duration", comment: "status info : literally 'Sensor Duration'")
+    }()
+
+    static let sensorEnd:String = {
+        return NSLocalizedString("sensorend", tableName: filename, bundle: Bundle.main, value: "Sensor End", comment: "status info : literally 'Sensor End'")
+    }()
+    
+    static let sensorRemaining:String = {
+        return NSLocalizedString("sensorRemaining", tableName: filename, bundle: Bundle.main, value: "Sensor Remaining", comment: "status info : literally 'Sensor Remaining'")
     }()
     
     static let notStarted:String = {
@@ -78,6 +126,10 @@ enum Texts_HomeView {
     
     static let ago:String = {
         return NSLocalizedString("ago", tableName: filename, bundle: Bundle.main, value: "ago", comment: "for home view, where it say how old the reading is, 'x minutes ago', literaly translation of 'ago'")
+    }()
+    
+    static let remaining: String = {
+        return NSLocalizedString("remaining", tableName: filename, bundle: Bundle.main, value: "remaining", comment: "for home view, where it say how old much time is left, literaly translation of 'remaining'")
     }()
 
     static let licenseInfo:String = {
@@ -133,11 +185,66 @@ enum Texts_HomeView {
     }()
     
     static let calibrationNotNecessary:String = {
-        return NSLocalizedString("calibrationNotNecessary", tableName: filename, bundle: Bundle.main, value: "With OOPWeb enabled, calibration is not necessary for the Libre sensor.", comment: "if web oop enabled, and also if transmitter supports this, user clicks calibrate button, but calibration is not possible")
+        return NSLocalizedString("calibrationNotNecessary", tableName: filename, bundle: Bundle.main, value: "When using the native transmitter algorithm, manual calibration is not available.\n\nIf you want to calibrate, you can switch to the xDrip algorithm in the transmitter screen (if available).", comment: "if web oop enabled, and also if transmitter supports this, user clicks calibrate button, but calibration is not possible")
     }()
  
     static let dexcomBatteryTooLow: String = {
         return NSLocalizedString("dexcomBatteryTooLow", tableName: filename, bundle: Bundle.main, value: "The Transmitter battery is too low!", comment: "Error message in case Dexcom G5 (and G6?) battery is too low. This is deteced by wrong G5 values 2096896")
+    }()
+    
+    static let enterSensorCode: String = {
+        return NSLocalizedString("enterSensorCode", tableName: filename, bundle: Bundle.main, value: "If you don't know the sensor code use 0000 but be aware that you will need to manually calibrate before you get readings.", comment: "When user needs to enter sensor code, to start firefly sensor")
+    }()
+    
+    static let stopSensorConfirmation: String = {
+        return NSLocalizedString("stopSensorConfirmation", tableName: filename, bundle: Bundle.main, value: "Are you sure you want to stop the sensor?", comment: "When user clicks stop sensor, ask confirmation")
+    }()
+    
+    static let noSensorData: String = {
+        return NSLocalizedString("noSensorData", tableName: filename, bundle: Bundle.main, value: "No sensor data", comment: "no sensor data is available")
+    }()
+    
+    static let noDataSourceConnected: String = {
+        return NSLocalizedString("noDataSourceConnected", tableName: filename, bundle: Bundle.main, value: "No CGM data source connected", comment: "no data source is enabled or connected")
+    }()
+    
+    // the same as noDataSourceConnected but shorter to display nicely in the Watch app
+    static let noDataSourceConnectedWatch: String = {
+        return NSLocalizedString("noDataSourceConnectedWatch", tableName: filename, bundle: Bundle.main, value: "No data source", comment: "no data source is enabled or connected")
+    }()
+    
+    static let reconnectLibreDataSource: String = {
+        return NSLocalizedString("reconnectLibreDataSource", tableName: filename, bundle: Bundle.main, value: "Disconnect and reconnect Libre sensor", comment: "ask the user to disconnect and reconnect the sensor")
+    }()
+    
+    // used when a CGM Transmitter is connected, but there is no active sensor data yet
+    static let waitingForDataSource: String = {
+        return NSLocalizedString("waitingForDataSource", tableName: filename, bundle: Bundle.main, value: "CGM connected. Waiting for data...", comment: "waiting for data to arrive")
+    }()
+    
+    // make sure any translations are less than 20-22 characters long (including the "%@")
+    static let hidingUrlForXSeconds:String = {
+        return String(format: NSLocalizedString("hidingUrlForXSeconds", tableName: filename, bundle: Bundle.main, value: "Hiding URL for %@s...", comment: "After clicking scan button, this message will appear"), String(ConstantsHomeView.hideUrlDuringTimeInSeconds))
+    }()
+    
+    static let nightscoutNotEnabled: String = {
+        return NSLocalizedString("nightscoutNotEnabled", tableName: filename, bundle: Bundle.main, value: "Nightscout is disabled", comment: "nightscout is not enabled")
+    }()
+    
+    static let nightscoutURLMissing: String = {
+        return NSLocalizedString("nightscoutURLMissing", tableName: filename, bundle: Bundle.main, value: "Nightscout URL missing", comment: "nightscout is not enabled")
+    }()
+    
+    static let libreLinkUpAccountCredentialsMissing: String = {
+        return NSLocalizedString("libreLinkUpAccountCredentialsMissing", tableName: filename, bundle: Bundle.main, value: "Username/password missing", comment: "username and/or password is missing for librelinkup")
+    }()
+    
+    static let libreLinkUpAccountCredentialsInvalid: String = {
+        return NSLocalizedString("libreLinkUpAccountCredentialsInvalid", tableName: filename, bundle: Bundle.main, value: "Invalid User/Password", comment: "username and/or password is invalid for librelinkup")
+    }()
+    
+    static let showHideItemsTitle: String = {
+        return NSLocalizedString("showHideItemsTitle", tableName: filename, bundle: Bundle.main, value: "Quick Show/Hide", comment: "show or hide various interface items")
     }()
     
 }

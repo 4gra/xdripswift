@@ -6,13 +6,19 @@ import os
 public enum LibreSensorType: String {
     
     // Libre 1
-    case libre1    = "DF"
+    case libre1 = "DF"
     
-    case libre1A2 =  "A2"
+    case libre1A2 = "A2"
     
-    case libre2    = "9D"
+    case libre2 = "9D"
     
-    case libreUS   = "E5"
+    case libre2C5 = "C5"
+    
+    case libre2C6 = "C6" // EU Libre 2 Plus
+    
+    case libreUS = "E5"
+    
+    case libreUSE6 = "E6"
    
     case libreProH = "70"
     
@@ -27,10 +33,19 @@ public enum LibreSensorType: String {
             return "Libre 1 A2"
             
         case .libre2:
-            return "Libre 2"
+            return "Libre 2 EU"
+            
+        case .libre2C5:
+            return "Libre 2 EU C5"
+            
+        case .libre2C6:
+            return "Libre 2 Plus EU"
             
         case .libreUS:
             return "Libre US"
+            
+        case .libreUSE6:
+            return "Libre US E6"
             
         case .libreProH:
             return "Libre PRO H"
@@ -51,7 +66,7 @@ public enum LibreSensorType: String {
         }
         
         // decrypt if libre2 or libreUS
-        if self == .libre2 || self == .libreUS {
+        if self == .libre2 || self == .libre2C5 || self == .libre2C6 || self == .libreUS || self == .libreUSE6 {
             
             var libreData = rxBuffer.subdata(in: headerLength..<(rxBufferEnd + 1))
 
@@ -80,32 +95,20 @@ public enum LibreSensorType: String {
         
     }
     
-    /// checks crc if needed for the sensor type (not for libreProH)
+    /// checks crc if needed for the sensor type
     func crcIsOk(rxBuffer:inout Data, headerLength: Int, log: OSLog?) -> Bool {
         
-        switch self {
-            
-        case .libreProH:
+        guard Crc.LibreCrc(data: &rxBuffer, headerOffset: headerLength, libreSensorType: self) else {
             
             if let log = log {
-                trace("    libreProH sensor, no CRC check", log: log, category: ConstantsLog.categoryCGMBubble, type: .info)
+                trace("    in crcIsOk, CRC check failed", log: log, category: ConstantsLog.categoryCGMBubble, type: .info)
             }
             
-        case .libre1, .libre1A2, .libre2, .libreUS:
-            
-            guard Crc.LibreCrc(data: &rxBuffer, headerOffset: headerLength) else {
-                
-                if let log = log {
-                    trace("    in crcIsOk, CRC check failed", log: log, category: ConstantsLog.categoryCGMBubble, type: .info)
-                }
-                
-                return false
-            }
-            
+            return false
         }
-        
+
         return true
-        
+
     }
 
     /// - reads the first byte in patchInfo and dependent on that value, returns type of sensor
@@ -130,8 +133,17 @@ public enum LibreSensorType: String {
         case "9D":
             return .libre2
             
+        case "C5":
+            return .libre2C5 // new Libre 2 EU type (May 2023)
+            
+        case "C6":
+            return .libre2C6 // new Libre 2 Plus EU type (May 2024)
+            
         case "E5":
             return .libreUS
+            
+        case "E6":
+            return .libreUSE6
             
         case "70":
             return .libreProH
@@ -142,6 +154,35 @@ public enum LibreSensorType: String {
         }
             
     }
+    
+    /// maximum sensor age in days, nil if no maximum
+    func maxSensorAgeInDays() -> Double? {
+        
+        switch self {
+        
+        case .libre1:
+            return 14.5
+            
+        case .libre1A2:
+            return 14.5
+
+        case .libre2, .libre2C5:
+            return 14.5
+            
+        case .libre2C6:
+            return 15.5
+
+        case .libreUS, .libreUSE6:
+            return nil
+
+        case .libreProH:
+            return 14
+
+        }
+        
+    }
+    
+
     
 }
 

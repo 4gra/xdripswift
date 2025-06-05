@@ -31,7 +31,8 @@ extension BLEPeripheral {
     /// should weboop be used or not - defined here to make it easier for coding, although not every type of bluetoothperipheral needs this
     @NSManaged public var webOOPEnabled: Bool
 
-    /// a BLEPeripheral should only have one of dexcomG5, watlaa, m5Stack, ...
+    /// - a BLEPeripheral should only have one of dexcomG5, watlaa, m5Stack, ...
+    /// - dexcomG5 is also used for dexcomG6
     @NSManaged public var dexcomG5: DexcomG5?
     
     /// a BLEPeripheral should only have one of dexcomG5, watlaa, m5Stack, ...
@@ -67,9 +68,22 @@ extension BLEPeripheral {
     // a BLEPeripheral should only have one of dexcomG5, watlaa, m5Stack, ...
     @NSManaged public var atom: Atom?
     
+    // a BLEPeripheral should only have one of dexcomG5, watlaa, m5Stack, ...
+    @NSManaged public var libre2heartbeat: Libre2HeartBeat?
+    
+    // a BLEPeripheral should only have one of dexcomG5, watlaa, m5Stack, ...
+    @NSManaged public var dexcomG7HeartBeat: DexcomG7HeartBeat?
+    
+    // a BLEPeripheral should only have one of dexcomG5, watlaa, m5Stack, ...
+    @NSManaged public var omniPodHeartBeat: OmniPodHeartBeat?
+    
+    // a BLEPeripheral should only have one of dexcomG5, watlaa, m5Stack, ...
+    @NSManaged public var dexcomG7: DexcomG7?
+    
     /// sensorSerialNumber of last sensor that was read
     @NSManaged public var sensorSerialNumber: String?
 
     /// timestamp when connection changed to connected or not connected
     @NSManaged public var lastConnectionStatusChangeTimeStamp: Date?
+    
 }
