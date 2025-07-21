@@ -66,7 +66,7 @@ final class SettingsViewController: UIViewController {
         case contactImage
         
         /// housekeeper settings
-        // case housekeeper // let's leave this out for now until an import function is added
+        case housekeeper
         
         /// M5 stack settings
         case M5stack
@@ -113,8 +113,8 @@ final class SettingsViewController: UIViewController {
                 return SettingsViewCalendarEventsSettingsViewModel()
             case .contactImage:
                 return SettingsViewContactImageSettingsViewModel()
-//            case .housekeeper:
-//                return SettingsViewHousekeeperSettingsViewModel(coreDataManager: coreDataManager)
+            case .housekeeper:
+                return SettingsViewHousekeeperSettingsViewModel(coreDataManager: coreDataManager)
             case .trace:
                 return SettingsViewTraceSettingsViewModel()
             case .info:
