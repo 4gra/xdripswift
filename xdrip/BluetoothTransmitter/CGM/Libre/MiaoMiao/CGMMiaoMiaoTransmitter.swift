@@ -58,6 +58,9 @@ class CGMMiaoMiaoTransmitter:BluetoothTransmitter, CGMTransmitter {
     /// instance of libreDataParser
     private let libreDataParser: LibreDataParser
 
+    /// sensor type
+    private var libreSensorType: LibreSensorType?
+
     // MARK: - Initialization
     /// - parameters:
     ///     - address: if already connected before, then give here the address that was received during previous connect, if not give nil
@@ -170,10 +173,12 @@ class CGMMiaoMiaoTransmitter:BluetoothTransmitter, CGMTransmitter {
                             if let libreSensorType = LibreSensorType.type(patchInfo: patchInfo) {
                                 // note that we should always have a libreSensorType
                                 
+                                self.libreSensorType = libreSensorType
+                                
                                 cGMMiaoMiaoTransmitterDelegate?.received(libreSensorType: libreSensorType, from: self)
 
                                 // decrypt of libre2 or libreUS
-                                dataIsDecryptedToLibre1Format = libreSensorType.decryptIfPossibleAndNeeded(rxBuffer: &rxBuffer, headerLength: miaoMiaoHeaderLength, log: log, patchInfo: patchInfo, uid: rxBuffer[5..<13].bytes)
+                                dataIsDecryptedToLibre1Format = libreSensorType.decryptIfPossibleAndNeeded(rxBuffer: &rxBuffer, headerLength: miaoMiaoHeaderLength, log: log, patchInfo: patchInfo, uid: Array(rxBuffer[5..<13]))
                                 
                                 // now except libreProH, all libres' 344 data is libre1 format
                                 // should crc check
@@ -207,7 +212,7 @@ class CGMMiaoMiaoTransmitter:BluetoothTransmitter, CGMTransmitter {
                             cGMMiaoMiaoTransmitterDelegate?.received(batteryLevel: batteryPercentage, from: self)
                             
                             // send batteryPercentage to delegate
-                            cgmTransmitterDelegate?.cgmTransmitterInfoReceived(glucoseData: &emptyArray, transmitterBatteryInfo: TransmitterBatteryInfo.percentage(percentage: batteryPercentage), sensorTimeInMinutes: nil)
+                            cgmTransmitterDelegate?.cgmTransmitterInfoReceived(glucoseData: &emptyArray, transmitterBatteryInfo: TransmitterBatteryInfo.percentage(percentage: batteryPercentage), sensorAge: nil)
 
                             // get sensor serialNumber and if changed inform delegate
                             if let libreSensorSerialNumber = LibreSensorSerialNumber(withUID: Data(rxBuffer.subdata(in: 5..<13)), with: LibreSensorType.type(patchInfo: patchInfo)) {
@@ -220,8 +225,9 @@ class CGMMiaoMiaoTransmitter:BluetoothTransmitter, CGMTransmitter {
                                     trace("    new sensor detected :  %{public}@", log: log, category: ConstantsLog.categoryCGMMiaoMiao, type: .info, libreSensorSerialNumber.serialNumber)
                                     
                                     // inform delegate about new sensor detected
-                                    cgmTransmitterDelegate?.newSensorDetected()
-                                    
+                                    // assign sensorStartDate, for this type of transmitter the sensorAge is passed in another call to cgmTransmitterDelegate
+                                    cgmTransmitterDelegate?.newSensorDetected(sensorStartDate: nil)
+
                                     cGMMiaoMiaoTransmitterDelegate?.received(serialNumber: libreSensorSerialNumber.serialNumber, from: self)
                                     
                                 }
@@ -246,8 +252,9 @@ class CGMMiaoMiaoTransmitter:BluetoothTransmitter, CGMTransmitter {
                         
                     case .newSensor:
                         trace("in peripheral didUpdateValueFor, new sensor detected", log: log, category: ConstantsLog.categoryCGMMiaoMiao, type: .info)
-                        cgmTransmitterDelegate?.newSensorDetected()
-                        
+                        // assign sensorStartDate, for this type of transmitter the sensorAge is passed in another call to cgmTransmitterDelegate
+                        cgmTransmitterDelegate?.newSensorDetected(sensorStartDate: nil)
+
                         // send 0xD3 and 0x01 to confirm sensor change as defined in MiaoMiao protocol documentation
                         // after that send start reading command, each with delay of 500 milliseconds
                         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + .milliseconds(500)) {
@@ -320,6 +327,20 @@ class CGMMiaoMiaoTransmitter:BluetoothTransmitter, CGMTransmitter {
         return .miaomiao
     }
     
+    func maxSensorAgeInDays() -> Double? {
+        
+        return libreSensorType?.maxSensorAgeInDays()
+        
+    }
+
+    func getCBUUID_Service() -> String {
+        return CBUUID_Service_MiaoMiao
+    }
+    
+    func getCBUUID_Receive() -> String {
+        return CBUUID_ReceiveCharacteristic_MiaoMiao
+    }
+
     // MARK: - helpers
     
     /// reset rxBuffer, reset startDate, set resendPacketCounter to 0
@@ -460,7 +481,7 @@ class CGMMiaoMiaoTransmitter:BluetoothTransmitter, CGMTransmitter {
                             // note that we should always have a libreSensorType
                             
                             // decrypt of libre2 or libreUS
-                            dataIsDecryptedToLibre1Format = libreSensorType.decryptIfPossibleAndNeeded(rxBuffer: &rxBuffer, headerLength: miaoMiaoHeaderLength, log: nil, patchInfo: patchInfo, uid: rxBuffer[5..<13].bytes)
+                            dataIsDecryptedToLibre1Format = libreSensorType.decryptIfPossibleAndNeeded(rxBuffer: &rxBuffer, headerLength: miaoMiaoHeaderLength, log: nil, patchInfo: patchInfo, uid: Array(rxBuffer[5..<13]))
                             
                             // now except libreProH, all libres' 344 data is libre1 format
                             // should crc check

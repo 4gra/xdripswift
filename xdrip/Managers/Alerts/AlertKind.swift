@@ -16,6 +16,7 @@ public enum AlertKind:Int, CaseIterable {
     case batterylow = 6
     case fastdrop = 7
     case fastrise = 8
+    case phonebatterylow = 9
 
     /// this is used for presentation in UI table view. It allows to order the alert kinds in the view, different than they case ordering, and so allows to add new cases
     init?(forSection section: Int) {
@@ -40,7 +41,8 @@ public enum AlertKind:Int, CaseIterable {
             self = .calibration
         case 8:
             self = .batterylow
-            
+        case 9:
+            self = .phonebatterylow
         default:
             fatalError("in AlertKind initializer init(forRowAt row: Int), there's no case for the rownumber")
         }
@@ -69,6 +71,8 @@ public enum AlertKind:Int, CaseIterable {
             return 5
         case 8://battery low
             return 6
+        case 9://phone battery low
+            return 9
         default:
             fatalError("in alertKindRawValue, unknown case")
         }
@@ -76,18 +80,12 @@ public enum AlertKind:Int, CaseIterable {
     
     /// if true, then this type of alert will (if raised) create an immediate notification which will have the current reading as text - simply means there's no need to create an additional notification with the current reading
     func createsImmediateNotificationWithBGReading() -> Bool {
-        
         switch self {
-            
         case .low, .high, .verylow, .veryhigh, .fastdrop, .fastrise:
             return true
-
-        case .missedreading, .batterylow, .calibration:
+        case .missedreading, .batterylow, .calibration, .phonebatterylow:
             return false
-
         }
-        
-        
     }
 
     /// example, low alert needs a value = value below which alert needs to fire - there's actually no alert right now that doesn't need a value, in iosxdrip there was the iphonemuted alert, but I removed this here. Function remains, never now it might come back
@@ -95,7 +93,7 @@ public enum AlertKind:Int, CaseIterable {
     /// probably only useful in UI - named AlertKind and not AlertType because there's already an AlertType which has a different goal
     func needsAlertValue() -> Bool {
         switch self {
-        case .low, .high, .verylow,.veryhigh,.missedreading,.calibration,.batterylow,.fastdrop,.fastrise:
+        case .low, .high, .verylow, .veryhigh, .missedreading, .calibration, .batterylow, .fastdrop, .fastrise, .phonebatterylow:
             return true
         }
     }
@@ -105,10 +103,9 @@ public enum AlertKind:Int, CaseIterable {
     /// will only be useful in UI
     func valueNeedsConversionToMmol() -> Bool {
         switch self {
-
         case .low, .high, .verylow, .veryhigh, .fastdrop, .fastrise:
             return true
-        case .missedreading, .calibration, .batterylow:
+        case .missedreading, .calibration, .batterylow, .phonebatterylow:
             return false
         }
     }
@@ -116,7 +113,6 @@ public enum AlertKind:Int, CaseIterable {
     /// at initial startup, a default alertentry will be created for every kind of alert. This function defines the default value to be used
     func defaultAlertValue() -> Int {
         switch self {
-            
         case .low:
             return ConstantsDefaultAlertLevels.low
         case .high:
@@ -139,13 +135,14 @@ public enum AlertKind:Int, CaseIterable {
             return ConstantsDefaultAlertLevels.fastdrop;
         case .fastrise:
             return ConstantsDefaultAlertLevels.fastrise;
+        case .phonebatterylow:
+            return ConstantsDefaultAlertLevels.defaultBatteryAlertLevelPhone
         }
     }
     
     /// description of the alert to be used for logging
     func descriptionForLogging() -> String {
         switch self {
-            
         case .low:
             return "low"
         case .high:
@@ -164,6 +161,8 @@ public enum AlertKind:Int, CaseIterable {
             return "fastdrop"
         case .fastrise:
             return "fastrise"
+        case .phonebatterylow:
+            return "phonebatterylow"
         }
     }
     
@@ -187,6 +186,9 @@ public enum AlertKind:Int, CaseIterable {
     ///     - delayInSeconds : If delayInSeconds not nil and > 0 or if delayInSeconds is nil, then the alert will be a future planned Alert. This will only be applicable to missed reading alerts.
     func alertNeeded(currentAlertEntry:AlertEntry, nextAlertEntry:AlertEntry?, lastBgReading:BgReading?, _ lastButOneBgReading:BgReading?, lastCalibration:Calibration?, transmitterBatteryInfo:TransmitterBatteryInfo?) -> (alertNeeded:Bool, alertBody:String?, alertTitle:String?, delayInSeconds:Int?) {
         //Not all input parameters in the closure are needed for every type of alert. - this is to make it generic
+        
+        let isMgDl = UserDefaults.standard.bloodGlucoseUnitIsMgDl
+        
         switch self {
             
         case .low,.verylow:
@@ -197,8 +199,9 @@ public enum AlertKind:Int, CaseIterable {
                     // first check if lastBgReading not nil and calculatedValue > 0.0, never know that it's not been checked by caller
                     if lastBgReading.calculatedValue == 0.0 {return (false, nil, nil, nil)}
                     // now do the actual check if alert is applicable or not
-                    if lastBgReading.calculatedValue.bgValueRounded(mgdl: UserDefaults.standard.bloodGlucoseUnitIsMgDl) < Double(currentAlertEntry.value).bgValueRounded(mgdl: UserDefaults.standard.bloodGlucoseUnitIsMgDl) {
-                        return (true, lastBgReading.unitizedDeltaString(previousBgReading: lastButOneBgReading, showUnit: true, highGranularity: true, mgdl: UserDefaults.standard.bloodGlucoseUnitIsMgDl), createAlertTitleForBgReadingAlerts(bgReading: lastBgReading, alertKind: self), nil)
+                    if lastBgReading.calculatedValue.bgValueRounded(mgDl: isMgDl) < Double(currentAlertEntry.value).bgValueRounded(mgDl: isMgDl) {
+                        
+                        return (true, createAlertBodyForBgReadingAlerts(bgReading: lastBgReading, alertKind: self), createAlertTitleForBgReadingAlerts(alertKind: self), nil)
                     } else {return (false, nil, nil, nil)}
                 } else {return (false, nil, nil, nil)}
             
@@ -210,8 +213,8 @@ public enum AlertKind:Int, CaseIterable {
                     // first check if calculatedValue > 0.0, never know that it's not been checked by caller
                     if lastBgReading.calculatedValue == 0.0 {return (false, nil, nil, nil)}
                     // now do the actual check if alert is applicable or not
-                    if lastBgReading.calculatedValue.bgValueRounded(mgdl: UserDefaults.standard.bloodGlucoseUnitIsMgDl) > Double(currentAlertEntry.value).bgValueRounded(mgdl: UserDefaults.standard.bloodGlucoseUnitIsMgDl){
-                        return (true, lastBgReading.unitizedDeltaString(previousBgReading: lastButOneBgReading, showUnit: true, highGranularity: true, mgdl: UserDefaults.standard.bloodGlucoseUnitIsMgDl), createAlertTitleForBgReadingAlerts(bgReading: lastBgReading, alertKind: self), nil)
+                    if lastBgReading.calculatedValue.bgValueRounded(mgDl: isMgDl) > Double(currentAlertEntry.value).bgValueRounded(mgDl: isMgDl){
+                        return (true, createAlertBodyForBgReadingAlerts(bgReading: lastBgReading, alertKind: self), createAlertTitleForBgReadingAlerts(alertKind: self), nil)
                     } else {return (false, nil, nil, nil)}
                 } else {return (false, nil, nil, nil)}
             
@@ -227,8 +230,8 @@ public enum AlertKind:Int, CaseIterable {
                         // first check if calculatedValue > 0.0, never know that it's not been checked by caller
                         if lastBgReading.calculatedValue == 0.0 || lastButOneBgReading.calculatedValue == 0.0 {return (false, nil, nil, nil)}
                         // now do the actual check if alert is applicable or not
-                        if lastButOneBgReading.calculatedValue.bgValueRounded(mgdl: UserDefaults.standard.bloodGlucoseUnitIsMgDl) - lastBgReading.calculatedValue.bgValueRounded(mgdl: UserDefaults.standard.bloodGlucoseUnitIsMgDl) > Double(currentAlertEntry.value).bgValueRounded(mgdl: UserDefaults.standard.bloodGlucoseUnitIsMgDl) {
-                            return (true, lastBgReading.unitizedDeltaString(previousBgReading: lastButOneBgReading, showUnit: true, highGranularity: true, mgdl: UserDefaults.standard.bloodGlucoseUnitIsMgDl), createAlertTitleForBgReadingAlerts(bgReading: lastBgReading, alertKind: self), nil)
+                        if lastButOneBgReading.calculatedValue.bgValueRounded(mgDl: isMgDl) - lastBgReading.calculatedValue.bgValueRounded(mgDl: isMgDl) > Double(currentAlertEntry.value).bgValueRounded(mgDl: isMgDl) {
+                            return (true, createAlertBodyForBgReadingAlerts(bgReading: lastBgReading, alertKind: self), createAlertTitleForBgReadingAlerts(alertKind: self), nil)
                         } else {return (false, nil, nil, nil)}
 
                     } else {return (false, nil, nil, nil)}
@@ -247,8 +250,8 @@ public enum AlertKind:Int, CaseIterable {
                         // first check if calculatedValue > 0.0, never know that it's not been checked by caller
                         if lastBgReading.calculatedValue == 0.0 || lastButOneBgReading.calculatedValue == 0.0 {return (false, nil, nil, nil)}
                         // now do the actual check if alert is applicable or not
-                        if lastBgReading.calculatedValue.bgValueRounded(mgdl: UserDefaults.standard.bloodGlucoseUnitIsMgDl) - lastButOneBgReading.calculatedValue.bgValueRounded(mgdl: UserDefaults.standard.bloodGlucoseUnitIsMgDl) > Double(currentAlertEntry.value).bgValueRounded(mgdl: UserDefaults.standard.bloodGlucoseUnitIsMgDl) {
-                            return (true, lastBgReading.unitizedDeltaString(previousBgReading: lastButOneBgReading, showUnit: true, highGranularity: true, mgdl: UserDefaults.standard.bloodGlucoseUnitIsMgDl), createAlertTitleForBgReadingAlerts(bgReading: lastBgReading, alertKind: self), nil)
+                        if lastBgReading.calculatedValue.bgValueRounded(mgDl: isMgDl) - lastButOneBgReading.calculatedValue.bgValueRounded(mgDl: isMgDl) > Double(currentAlertEntry.value).bgValueRounded(mgDl: isMgDl) {
+                            return (true, createAlertBodyForBgReadingAlerts(bgReading: lastBgReading, alertKind: self), createAlertTitleForBgReadingAlerts(alertKind: self), nil)
                         } else {return (false, nil, nil, nil)}
 
                     } else {return (false, nil, nil, nil)}
@@ -359,8 +362,8 @@ public enum AlertKind:Int, CaseIterable {
                 switch transmitterBatteryInfo {
                 case .percentage(let percentage):
                     batteryLevelToCheck = percentage
-                case .DexcomG5(let voltageA, _, _, _, _):
-                    batteryLevelToCheck = voltageA
+                case .DexcomG5(_, let voltageB, _, _, _):
+                    batteryLevelToCheck = voltageB
                 case .DexcomG4(let level):
                     batteryLevelToCheck = level
                 }
@@ -370,7 +373,22 @@ public enum AlertKind:Int, CaseIterable {
                 }
                 
                 return (false, nil, nil, nil)
+
+        case .phonebatterylow:
+            // if alertEntry not enabled, return false
+            if !currentAlertEntry.alertType.enabled {return (false, nil, nil, nil)}
+            
+            // Create battery info similar to transmitter battery info
+            UIDevice.current.isBatteryMonitoringEnabled = true
+            let phoneBatteryLevel = Int(UIDevice.current.batteryLevel * 100)
+            
+            // Check if battery level is below threshold, similar to transmitter check
+            if currentAlertEntry.value > phoneBatteryLevel {
+                return (true, "", Texts_Alerts.phoneBatteryLowAlertTitle, nil)
             }
+            
+            return (false, nil, nil, nil)
+        }
     }
     
     /// returns notification identifier for local notifications, for specific alertKind.
@@ -395,6 +413,8 @@ public enum AlertKind:Int, CaseIterable {
             return ConstantsNotifications.NotificationIdentifiersForAlerts.fastDropAlert
         case .fastrise:
             return ConstantsNotifications.NotificationIdentifiersForAlerts.fastRiseAlert
+        case .phonebatterylow:
+            return ConstantsNotifications.NotificationIdentifiersForAlerts.phoneBatteryLow
         }
     }
     
@@ -420,6 +440,8 @@ public enum AlertKind:Int, CaseIterable {
             return Texts_Alerts.fastDropTitle
         case .fastrise:
             return Texts_Alerts.fastRiseTitle
+        case .phonebatterylow:
+            return Texts_Alerts.phoneBatteryLowAlertTitle
         }
     }
     
@@ -440,36 +462,53 @@ public enum AlertKind:Int, CaseIterable {
             } else {
                 return ""// even though 20 is used as default alert level (assuming 20%) give as default value empty string
             }
+        case .phonebatterylow:
+            return "%"
+        }
+    }
+    
+    
+    /// this categorizes the different alert types into an AlertUrgencyType. Used for deciding how to display the UI and notification content
+    /// - Returns: the type of alert (i.e. if urgent, notUrgent etc)
+    func alertUrgencyType() -> AlertUrgencyType {
+        switch self {
+        case .verylow, .veryhigh, .fastdrop:
+            return .urgent
+        case .low, .high, .fastrise:
+            return .warning
+        default:
+            return .normal
         }
     }
 }
 
 // specifically for high, low, very high, very low because these need the same kind of alertTitle
-fileprivate func createAlertTitleForBgReadingAlerts(bgReading:BgReading, alertKind:AlertKind) -> String {
-    var returnValue:String = ""
-    
+fileprivate func createAlertTitleForBgReadingAlerts(alertKind: AlertKind) -> String {
     // the start of the body, which says like "High Alert"
     switch alertKind {
-        
     case .low:
-        returnValue = returnValue + Texts_Alerts.lowAlertTitle
+        return Texts_Alerts.lowAlertTitle
     case .high:
-        returnValue = returnValue + Texts_Alerts.highAlertTitle
+        return Texts_Alerts.highAlertTitle
     case .verylow:
-        returnValue = returnValue + Texts_Alerts.veryLowAlertTitle
+        return Texts_Alerts.veryLowAlertTitle
     case .veryhigh:
-        returnValue = returnValue + Texts_Alerts.veryHighAlertTitle
+        return Texts_Alerts.veryHighAlertTitle
     case .fastdrop:
-        returnValue = returnValue + Texts_Alerts.fastDropTitle
+        return Texts_Alerts.fastDropTitle
     case .fastrise:
-        returnValue = returnValue + Texts_Alerts.fastRiseTitle
-        
-    case .missedreading, .calibration, .batterylow:
-        return returnValue
+        return Texts_Alerts.fastRiseTitle
+    case .missedreading, .calibration, .batterylow, .phonebatterylow:
+        return ""
     }
+}
+
+// specifically for high, low, very high, very low because these need to show an alert body with the BG value etc
+fileprivate func createAlertBodyForBgReadingAlerts(bgReading:BgReading, alertKind:AlertKind) -> String {
+    var returnValue:String = ""
     
     // add unit
-    returnValue = returnValue + " " + bgReading.calculatedValue.mgdlToMmolAndToString(mgdl: UserDefaults.standard.bloodGlucoseUnitIsMgDl)
+    returnValue = returnValue + " " + bgReading.calculatedValue.mgDlToMmolAndToString(mgDl: UserDefaults.standard.bloodGlucoseUnitIsMgDl)
     
     // add slopeArrow
     if !bgReading.hideSlope {

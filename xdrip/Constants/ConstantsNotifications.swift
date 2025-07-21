@@ -18,6 +18,8 @@ enum ConstantsNotifications {
         static let fastDropAlert = "fastDropAlert"
         /// fast rise
         static let fastRiseAlert = "fastRiseAlert"
+        /// phone battery low
+        static let phoneBatteryLow = "phoneBatteryLow"
     }
     
     /// identifiers for calibration requests
@@ -53,8 +55,5 @@ enum ConstantsNotifications {
     
     /// notification identifier for xDripErrors received in RootViewController's cgmTransmitterDelegate
     static let notificationIdentifierForxCGMTransmitterDelegatexDripError = "notificationIdentifierForxCGMTransmitterDelegatexDripError"
-    
-    /// if the time between the last and last but one reading is less than minimiumTimeBetweenTwoReadingsInMinutes, then there will bd no notification created - except if there's been a disconnect in between these two readings
-    static let minimiumTimeBetweenTwoReadingsInMinutes = 4.75
     
 }

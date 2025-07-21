@@ -16,8 +16,13 @@ enum TransmitterBatteryInfo: Equatable {
         switch (self) {
         case .DexcomG4(let level):
             return level.description
-        case .DexcomG5(let voltA, let voltB, let res, let runt, let temp):
-            return "VoltageA = " + voltA.description + ", Voltage B = " + voltB.description + ", resistance = " + res.description + ", runtime = " + runt.description + ", temperature = " + temp.description
+        case .DexcomG5(let voltA, let voltB, _, _, _):
+            if (voltA == 0 || voltB == 0) {
+                return Texts_HomeView.waitingForDataSource // "waiting for data..."
+            } else {
+                return "Voltage A: " + voltA.description + "0mV\nVoltage B: " + voltB.description + "0mV"
+            }
+//            return "Voltage A: " + (voltA > 0 ? voltA.description + "0" : "-") + "mV\nVoltage B: " + (voltB > 0 ? voltB.description + "0" : "-") + "mV" //+ "\nResistance: " + resist.description + "\nRuntime: " + (runt != -1 ? runtime.description : "n/a") + "\nTemperature: " + temperature.description
         case .percentage(let perc):
             return  perc.description + "%"
         }
@@ -33,9 +38,9 @@ enum TransmitterBatteryInfo: Equatable {
             return ("battery" , percentage)
             
             
-        case .DexcomG5(voltageA: let voltageA, voltageB: _, resist: _, runtime: _, temperature: _):
+        case .DexcomG5(voltageA: _, voltageB: let voltageB, resist: _, runtime: _, temperature: _):
             
-            return ("batteryVoltage" , voltageA)
+            return ("batteryVoltage" , voltageB)
 
             
         case .DexcomG4(level: let level):
@@ -81,7 +86,7 @@ enum TransmitterBatteryInfo: Equatable {
                 return nil
             }
             
-        case 1://dexcomg5
+        case 1://dexcomg5 or dexcomg6
             
             // intialize values as nil
             var voltageA:Int?
@@ -91,18 +96,38 @@ enum TransmitterBatteryInfo: Equatable {
             var temperature:Int?
             
             switch data.count {// check total length 5 or 9, if values are stored with 4 bytes, then it will be 5 otherwise 9
-            case 21:// if values are stored with 4 bytes per it
+            case 21:// if values are stored with 4 bytes per int
                 voltageA = Int(data.uint32(position: 1))
                 voltageB = Int(data.uint32(position: 1 + 4))
                 resist = Int(data.uint32(position: 1 + 8))
-                runtime = Int(data.uint32(position: 1 + 12))
+
+                // see BatteryStatusRxMessage
+                // in some cases there's no runtime, in that case value -1 is used
+                // which results in 4 times 255
+                // check that and if there's 8 times 255 then assign -1 to runtime
+                if data[(1+8)..<(1+12)].hexEncodedString() == "ffffffff" {
+                    runtime = -1
+                } else {
+                    runtime = Int(data.uint32(position: 1 + 12))
+                }
                 temperature = Int(data.uint32(position: 1 + 16))
-            case 41:// if values are stored with 8 bytes per it
+                
+            case 41:// if values are stored with 8 bytes per int
                 voltageA = Int(data.uint64(position: 1))
                 voltageB = Int(data.uint64(position: 1 + 8))
                 resist = Int(data.uint64(position: 1 + 16))
-                runtime = Int(data.uint64(position: 1 + 24))
+                
+                // see BatteryStatusRxMessage
+                // in some cases there's no runtime, in that case value -1 is used
+                // which results in 8 times 255
+                // check that and if there's 8 times 255 then assign -1 to runtime
+                if data[(1+24)..<(1+32)].hexEncodedString() == "ffffffffffffffff" {
+                    runtime = -1
+                } else {
+                    runtime = Int(data.uint64(position: 1 + 24))
+                }
                 temperature = Int(data.uint64(position: 1 + 32))
+                
             default:
                 break
             }

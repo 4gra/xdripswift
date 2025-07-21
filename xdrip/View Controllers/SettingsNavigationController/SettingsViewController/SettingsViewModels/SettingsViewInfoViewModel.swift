@@ -11,8 +11,11 @@ fileprivate enum Setting:Int, CaseIterable {
     /// licenseInfo
     case licenseInfo = 2
     
+    /// link to open the project GitHub page
+    case showGitHub = 3
+    
     /// link to icons8
-    case icons8 = 3
+    case icons8 = 4
     
 }
 
@@ -27,7 +30,7 @@ struct SettingsViewInfoViewModel:SettingsViewModelProtocol {
     }
     
     func sectionTitle() -> String? {
-        return Texts_SettingsView.sectionTitleAbout
+        return ConstantsSettingsIcons.infoSettingsIcon + " " + Texts_SettingsView.sectionTitleAbout
     }
     
     func settingsRowText(index: Int) -> String {
@@ -46,8 +49,11 @@ struct SettingsViewInfoViewModel:SettingsViewModelProtocol {
         case .buildNumber:
             return Texts_SettingsView.build
             
+        case .showGitHub:
+            return Texts_SettingsView.showGitHub
+            
         case .icons8:
-            return "Icons By icons8.com"
+            return "Icons from icons8.com"
 
         }
         
@@ -68,7 +74,7 @@ struct SettingsViewInfoViewModel:SettingsViewModelProtocol {
         case .licenseInfo:
             return .detailButton
             
-        case .icons8:
+        case .showGitHub, .icons8:
             return .disclosureIndicator
             
         }
@@ -97,11 +103,7 @@ struct SettingsViewInfoViewModel:SettingsViewModelProtocol {
 
             return version
             
-        case .licenseInfo:
-            
-            return nil
-            
-        case .icons8:
+        case .licenseInfo, .showGitHub, .icons8:
             
             return nil
 
@@ -132,6 +134,13 @@ struct SettingsViewInfoViewModel:SettingsViewModelProtocol {
         case .licenseInfo:
             return SettingsSelectedRowAction.showInfoText(title: ConstantsHomeView.applicationName, message: Texts_HomeView.licenseInfo + ConstantsHomeView.infoEmailAddress)
 
+        case .showGitHub:
+            guard let url = URL(string: ConstantsHomeView.gitHubURL) else { return .nothing}
+            
+            UIApplication.shared.open(url)
+            
+            return .nothing
+            
         case .icons8:
             guard let url = URL(string: "https://icons8.com") else { return .nothing}
             

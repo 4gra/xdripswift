@@ -1,7 +1,7 @@
 /// default alert levels to be used when creating defalt alert entries
 enum ConstantsDefaultAlertLevels {
     // default battery alert level, below this level an alert should be generated - this default value will be used when changing transmittertype
-    static let defaultBatteryAlertLevelDexcomG5 = 300
+    static let defaultBatteryAlertLevelDexcomG5 = 270
     static let defaultBatteryAlertLevelDexcomG4 = 210
     static let defaultBatteryAlertLevelMiaoMiao = 20
     static let defaultBatteryAlertLevelBubble = 20
@@ -12,7 +12,7 @@ enum ConstantsDefaultAlertLevels {
     static let defaultBatteryAlertLevelWatlaa = 20
     static let defaultBatteryAlertLevelLibre2 = 20
     static let defaultBatteryAlertLevelAtom = 20
-    
+    static let defaultBatteryAlertLevelPhone = 10
     // blood glucose level alert values in mgdl
     static let veryHigh = 250
     static let veryLow = 50

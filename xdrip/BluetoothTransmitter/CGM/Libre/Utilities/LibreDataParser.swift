@@ -30,12 +30,13 @@ class LibreDataParser {
     ///     - sensorTimeInMinutes: age of sensor in minutes
     ///     - libre1DerivedAlgorithmParameters : if nil then oop web is not used
     ///     - testTimeStamp : if set, then the most recent reading will get this timestamp
-    private func parseLibre1Data(libreData: Data, libre1DerivedAlgorithmParameters: Libre1DerivedAlgorithmParameters?, testTimeStamp: Date?) -> (glucoseData:[GlucoseData], sensorState:LibreSensorState, sensorTimeInMinutes:Int) {
+    ///     - libreSensorType. if nil means not known.  For transmitters that don't know the sensorType, this will not work
+    private func parseLibre1Data(libreData: Data, libre1DerivedAlgorithmParameters: Libre1DerivedAlgorithmParameters?, testTimeStamp: Date?, libreSensorType: LibreSensorType?) -> (glucoseData:[GlucoseData], sensorState:LibreSensorState, sensorTimeInMinutes:Int) {
         
         let ourTime = testTimeStamp == nil ? Date() : testTimeStamp!
-        let indexTrend:Int = libreData.getByteAt(position: 26) & 0xFF
-        let indexHistory:Int = libreData.getByteAt(position: 27) & 0xFF
-        let sensorTimeInMinutes:Int = 256 * (libreData.getByteAt(position: 317) & 0xFF) + (libreData.getByteAt(position: 316) & 0xFF)
+        let indexTrend:Int = libreData.getByteAt(position: (libreSensorType == .libreProH ? 76:26)) & 0xFF
+        let indexHistory:Int = (libreSensorType == .libreProH ? 29 :libreData.getByteAt(position: 27) & 0xFF) //If Tomato firmware is modified, we will 168 byte history ..presently this to be ignored..
+        let sensorTimeInMinutes:Int = (libreSensorType == .libreProH ? 256 * (libreData.getByteAt(position: 75) & 0xFF) + (libreData.getByteAt(position: 74) & 0xFF) : 256 * (libreData.getByteAt(position: 317) & 0xFF) + (libreData.getByteAt(position: 316) & 0xFF))
         let sensorStartTimeInMilliseconds:Double = ourTime.toMillisecondsAsDouble() - (Double)(sensorTimeInMinutes * 60 * 1000)
         var returnValue:Array<GlucoseData> = []
         let sensorState = LibreSensorState(stateByte: libreData[4])
@@ -84,8 +85,8 @@ class LibreDataParser {
                     
                     if (glucoseLevelRaw > 0) {
                         
-                        result.append(GlucoseData(timeStamp: readingTimeStamp, glucoseLevelRaw: glucoseLevelRaw * ConstantsBloodGlucose.libreMultiplier))
-                        
+                        result.append(GlucoseData(timeStamp: readingTimeStamp, glucoseLevelRaw: glucoseLevelRaw * ConstantsBloodGlucose.libreMultiplier ))
+                    
                     }
                     
                 }
@@ -99,7 +100,7 @@ class LibreDataParser {
         // now use rangeProcessor to get trend measurements as array of GlucoseData
         var trend  = rangeProcessor(16, indexTrend, { index in
             return (max(0, (Double)(sensorTimeInMinutes - index))) * 60.0
-        }, 28)
+        }, (libreSensorType == .libreProH ? 80:28))
         
         // add previously stored values if there are any
         trend = extendWithPreviousRawValues(trend: trend)
@@ -137,9 +138,9 @@ class LibreDataParser {
         let timeInSecondsOfMostRecentHistoryValue = (dateOfMostRecentHistoryValue(sensorTimeInMinutes: sensorTimeInMinutes, nextHistoryBlock: indexHistory, date: ourTime).toMillisecondsAsDouble() - sensorStartTimeInMilliseconds) / 1000
 
         // now use rangeProcessor to get history measurements as array of GlucoseData
-        var history = rangeProcessor(32, indexHistory, { index in
+        var history = rangeProcessor((libreSensorType == .libreProH ? 28:32), indexHistory, { index in
             return (max(0, timeInSecondsOfMostRecentHistoryValue - 900.0 * (Double)(index)))
-        }, 124)
+        }, (libreSensorType == .libreProH ? 170:124))
         
         // smooth history one time, if required
         if UserDefaults.standard.smoothLibreValues {
@@ -222,7 +223,7 @@ class LibreDataParser {
                 
                 libre1DataProcessor(libreSensorSerialNumber: libreSensorSerialNumber, libreSensorType: libreSensorType, libreData: libreData, cgmTransmitterDelegate: cgmTransmitterDelegate, testTimeStamp: testTimeStamp, completionHandler: completionHandler)
                 
-            case .libreUS:// not sure if this works for libreUS
+            case .libreUS, .libreUSE6:// not sure if this works for libreUS
                 
                 // libreUS isn't working yet, create an error and send to delegate
                 cgmTransmitterDelegate?.errorOccurred(xDripError: LibreOOPWebError.libreUSNotSupported)
@@ -230,7 +231,7 @@ class LibreDataParser {
                 // should never come here ?
                 trace("in libreDataProcessor, is libreUS but data is not decrypted - no further processing", log: log, category: ConstantsLog.categoryLibreDataParser, type: .info)
                 
-            case .libre2:
+            case .libre2, .libre2C5, .libre2C6, .libre27F:
                 
                 // should never come here ?
                 trace("in libreDataProcessor, is libre2 but data is not decrypted - no further processing", log: log, category: ConstantsLog.categoryLibreDataParser, type: .info)
@@ -243,7 +244,7 @@ class LibreDataParser {
             // or it's a libre 2 sensor but the data is decrypted
             
             // get readings from buffer using local Libre 1 parser
-            let parsedLibre1Data = parseLibre1Data(libreData: libreData, libre1DerivedAlgorithmParameters: nil, testTimeStamp: testTimeStamp)
+            let parsedLibre1Data = parseLibre1Data(libreData: libreData, libre1DerivedAlgorithmParameters: nil, testTimeStamp: testTimeStamp, libreSensorType: libreSensorType)
             
             // handle the result
             handleGlucoseData(result: (parsedLibre1Data.glucoseData, parsedLibre1Data.sensorTimeInMinutes, parsedLibre1Data.sensorState, nil), cgmTransmitterDelegate: cgmTransmitterDelegate, completionHandler: completionHandler)
@@ -275,7 +276,7 @@ class LibreDataParser {
         // if libre1DerivedAlgorithmParameters == nil, then calculate them
         if UserDefaults.standard.libre1DerivedAlgorithmParameters == nil {
             
-            UserDefaults.standard.libre1DerivedAlgorithmParameters = Libre1DerivedAlgorithmParameters(bytes: libreData, serialNumber: libreSensorSerialNumber)
+            UserDefaults.standard.libre1DerivedAlgorithmParameters = Libre1DerivedAlgorithmParameters(bytes: libreData, serialNumber: libreSensorSerialNumber, libreSensorType: libreSensorType)
             
         }
         
@@ -290,7 +291,7 @@ class LibreDataParser {
             trace("in libreDataProcessor, libre1DerivedAlgorithmParameters = %{public}@", log: log, category: ConstantsLog.categoryLibreDataParser, type: .debug, libre1DerivedAlgorithmParameters.description)
         }
         
-        let parsedLibre1Data = parseLibre1Data(libreData: libreData, libre1DerivedAlgorithmParameters: libre1DerivedAlgorithmParameters, testTimeStamp: testTimeStamp)
+        let parsedLibre1Data = parseLibre1Data(libreData: libreData, libre1DerivedAlgorithmParameters: libre1DerivedAlgorithmParameters, testTimeStamp: testTimeStamp, libreSensorType: libreSensorType)
         
         // handle the result
         handleGlucoseData(result: (parsedLibre1Data.glucoseData, parsedLibre1Data.sensorTimeInMinutes, parsedLibre1Data.sensorState, nil), cgmTransmitterDelegate: cgmTransmitterDelegate, completionHandler: completionHandler)
@@ -344,10 +345,16 @@ class LibreDataParser {
             cgmTransmitterDelegate?.errorOccurred(xDripError: xDripError)
             
         }
-        
+
+        // variable to  be used in last call to cgmTransmitterDelegate
+        var sensorTimeInResult: TimeInterval?
+
         // if sensor time < 60, return an empty glucose data array
         // should probably not happen because we only get here if status = .ready or .expired ?
         if let sensorTimeInMinutes = result.sensorTimeInMinutes {
+            
+            // assign sensorTimeInResult, will be used later
+            sensorTimeInResult = TimeInterval(minutes: Double(sensorTimeInMinutes))
             
             guard sensorTimeInMinutes >= 60 else {
                 
@@ -355,7 +362,7 @@ class LibreDataParser {
                 
                 var emptyArray = [GlucoseData]()
                 
-                cgmTransmitterDelegate?.cgmTransmitterInfoReceived(glucoseData: &emptyArray, transmitterBatteryInfo: nil, sensorTimeInMinutes: result.sensorTimeInMinutes)
+                cgmTransmitterDelegate?.cgmTransmitterInfoReceived(glucoseData: &emptyArray, transmitterBatteryInfo: nil, sensorAge: TimeInterval(minutes: Double(sensorTimeInMinutes)))
                 
                 // call completion handler to make sure the sensor state is handled, set state to .starting, because result.sensorState has value .ready here which is not correct
                 completionHandler(.starting, result.xDripError)
@@ -367,8 +374,9 @@ class LibreDataParser {
         }
         
         var result = result
+
         // call delegate with result
-        cgmTransmitterDelegate?.cgmTransmitterInfoReceived(glucoseData: &result.glucoseData, transmitterBatteryInfo: nil, sensorTimeInMinutes: result.sensorTimeInMinutes)
+        cgmTransmitterDelegate?.cgmTransmitterInfoReceived(glucoseData: &result.glucoseData, transmitterBatteryInfo: nil, sensorAge: sensorTimeInResult)
         
         completionHandler(result.sensorState, result.xDripError)
         

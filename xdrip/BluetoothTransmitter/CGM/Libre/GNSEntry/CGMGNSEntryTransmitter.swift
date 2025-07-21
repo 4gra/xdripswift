@@ -229,7 +229,7 @@ class CGMGNSEntryTransmitter:BluetoothTransmitter, CGMTransmitter {
                         i = i + 1
                     }
                     
-                    cgmTransmitterDelegate?.cgmTransmitterInfoReceived(glucoseData: &readings, transmitterBatteryInfo: nil, sensorTimeInMinutes: Int(sensorElapsedTimeInMinutes))
+                    cgmTransmitterDelegate?.cgmTransmitterInfoReceived(glucoseData: &readings, transmitterBatteryInfo: nil, sensorAge: TimeInterval(minutes: Double(sensorElapsedTimeInMinutes)))
                     
                 }
             }
@@ -237,11 +237,8 @@ class CGMGNSEntryTransmitter:BluetoothTransmitter, CGMTransmitter {
         
     }
     
-    // MARK: CGMTransmitter protocol functions
+    // MARK: - CGMTransmitter protocol functions
     
-    func setWebOOPEnabled(enabled: Bool) {
-    }
-
     func setNonFixedSlopeEnabled(enabled: Bool) {
         nonFixedSlopeEnabled = enabled
     }
@@ -250,19 +247,19 @@ class CGMGNSEntryTransmitter:BluetoothTransmitter, CGMTransmitter {
         return .GNSentry
     }
     
-    func isWebOOPEnabled() -> Bool {
-        return false
-    }
-
     func isNonFixedSlopeEnabled() -> Bool {
         return nonFixedSlopeEnabled
     }
     
-    func requestNewReading() {
-        // not supported for GNSEntry
+    func getCBUUID_Service() -> String {
+        return CBUUID_GNWService
     }
     
-    // MARK: CBCentralManager overriden functions
+    func getCBUUID_Receive() -> String {
+        return CBUUID_Characteristic_UUID.CBUUID_GNW_Notify.rawValue
+    }
+
+    // MARK: - CBCentralManager overriden functions
     
     override func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
         trace("didDiscoverCharacteristicsFor", log: log, category: ConstantsLog.categoryCGMGNSEntry, type: .info)

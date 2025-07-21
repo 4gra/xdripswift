@@ -58,6 +58,9 @@ class CGMLibre2Transmitter:BluetoothTransmitter, CGMTransmitter {
     // it will be casted to LibreNFC when needed
     private var libreNFC: NSObject?
     
+    /// sensor type
+    private var libreSensorType: LibreSensorType?
+    
     // MARK: - Initialization
     /// - parameters:
     ///     - address: if already connected before, then give here the address that was received during previous connect, if not give nil
@@ -70,9 +73,11 @@ class CGMLibre2Transmitter:BluetoothTransmitter, CGMTransmitter {
     init(address:String?, name: String?, bluetoothTransmitterDelegate: BluetoothTransmitterDelegate, cGMLibre2TransmitterDelegate : CGMLibre2TransmitterDelegate, sensorSerialNumber:String?, cGMTransmitterDelegate:CGMTransmitterDelegate, nonFixedSlopeEnabled: Bool?, webOOPEnabled: Bool?) {
         
         // assign addressname and name or expected devicename
-        var newAddressAndName:BluetoothTransmitter.DeviceAddressAndName = BluetoothTransmitter.DeviceAddressAndName.notYetConnected(expectedName: "abbott")
+        // (actually this now isn't really necessary as for new devices, sensorSerialNumber will be nil and we'll update the superclass expectedName anyway after the NFC scan via the delegate)
+        var newAddressAndName:BluetoothTransmitter.DeviceAddressAndName = BluetoothTransmitter.DeviceAddressAndName.notYetConnected(expectedName: "ABBOTT" + (sensorSerialNumber ?? ""))
+        
         if let address = address {
-            newAddressAndName = BluetoothTransmitter.DeviceAddressAndName.alreadyConnectedBefore(address: address, name: name)
+            newAddressAndName = BluetoothTransmitter.DeviceAddressAndName.alreadyConnectedBefore(address: address, name: "ABBOTT" + (sensorSerialNumber ?? ""))
         }
         
         // initialize sensorSerialNumber
@@ -109,34 +114,25 @@ class CGMLibre2Transmitter:BluetoothTransmitter, CGMTransmitter {
         // meanwhile, the real scanning can start
         
         // create libreNFC instance and start session
-        if #available(iOS 14.0, *) {
+        if NFCTagReaderSession.readingAvailable {
             
-            if NFCTagReaderSession.readingAvailable {
-
-                // startScanning is getting called several times, but we must restrict launch of nfc scan to one single time, therefore check if libreNFC == nil
-                if libreNFC == nil {
-                    
-                    libreNFC = LibreNFC(libreNFCDelegate: self)
-                    
-                    (libreNFC as! LibreNFC).startSession()
-                    
-                }
-
-            } else {
+            // startScanning is getting called several times, but we must restrict launch of nfc scan to one single time, therefore check if libreNFC == nil
+            if libreNFC == nil {
                 
-                bluetoothTransmitterDelegate?.error(message: TextsLibreNFC.deviceMustSupportNFC)
+                libreNFC = LibreNFC(libreNFCDelegate: self)
+                
+                (libreNFC as! LibreNFC).startSession()
                 
             }
             
-            
         } else {
             
-            bluetoothTransmitterDelegate?.error(message: TextsLibreNFC.deviceMustSupportIOS14)
+            bluetoothTransmitterDelegate?.error(message: TextsLibreNFC.deviceMustSupportNFC)
             
         }
         
-        // start the bluetooth scanning
-        return super.startScanning()
+        // start the NFC scan (not BLE scanning)
+        return .nfcScanNeeded
 
     }
     
@@ -182,6 +178,17 @@ class CGMLibre2Transmitter:BluetoothTransmitter, CGMTransmitter {
             return
             
         }
+            
+        // logging libreSensorUID and libre1DerivedAlgorithmParameters just in case it's needed for debugging purposes
+        var libre1DerivedAlgorithmParametersAsString: String!
+        if let libre1DerivedAlgorithmParameters = UserDefaults.standard.libre1DerivedAlgorithmParameters {
+            libre1DerivedAlgorithmParametersAsString = libre1DerivedAlgorithmParameters.description
+        } else {
+            libre1DerivedAlgorithmParametersAsString = "unknown"
+        }
+        
+        trace("in peripheral didUpdateValueFor libreSensorUID = %{public}@, libre1DerivedAlgorithmParameters = %{public}@", log: log, category: ConstantsLog.categoryCGMLibre2, type: .info, libreSensorUID.toHexString(), libre1DerivedAlgorithmParametersAsString)
+
         
         if let value = characteristic.value {
             
@@ -224,8 +231,11 @@ class CGMLibre2Transmitter:BluetoothTransmitter, CGMTransmitter {
             let unLockPayLoad = Data(Libre2BLEUtilities.streamingUnlockPayload(sensorUID: libreSensorUID, info: librePatchInfo, enableTime: UserDefaults.standard.libreActiveSensorUnlockCode, unlockCount: UserDefaults.standard.libreActiveSensorUnlockCount))
             
             trace("in peripheral didUpdateNotificationStateFor, writing streaming unlock payload: %{public}@", log: log, category: ConstantsLog.categoryCGMLibre2, type: .info, unLockPayLoad.toHexString())
-            
-            _ = writeDataToPeripheral(data: unLockPayLoad, type: .withResponse)
+                
+            // user may have chosen to run xDrip4iOS in parallel with other apps, in this case suppress sending unlockpayload
+            if !UserDefaults.standard.suppressUnLockPayLoad {
+                _ = writeDataToPeripheral(data: unLockPayLoad, type: .withResponse)
+            }
 
         }
         
@@ -279,11 +289,13 @@ class CGMLibre2Transmitter:BluetoothTransmitter, CGMTransmitter {
                 // if oop web not enabled, then don't pass libre1DerivedAlgorithmParameters
                 var parsedBLEData = Libre2BLEUtilities.parseBLEData(Data(try Libre2BLEUtilities.decryptBLE(sensorUID: sensorUID, data: rxBuffer)), libre1DerivedAlgorithmParameters: isWebOOPEnabled() ? UserDefaults.standard.libre1DerivedAlgorithmParameters : nil)
                 
-                // send glucoseData and sensorTimeInMinutes to cgmTransmitterDelegate
-                cgmTransmitterDelegate?.cgmTransmitterInfoReceived(glucoseData: &parsedBLEData.bleGlucose, transmitterBatteryInfo: nil, sensorTimeInMinutes: Int(parsedBLEData.sensorTimeInMinutes))
+                // send glucoseData and sensorAge to cgmTransmitterDelegate
+                cgmTransmitterDelegate?.cgmTransmitterInfoReceived(glucoseData: &parsedBLEData.bleGlucose, transmitterBatteryInfo: nil, sensorAge: TimeInterval(minutes: Double(parsedBLEData.sensorTimeInMinutes)))
                 
-                // send sensorTimeInMinutes also to cGMLibre2TransmitterDelegate
+                // send sensorAge also to cGMLibre2TransmitterDelegate
                 cGMLibre2TransmitterDelegate?.received(sensorTimeInMinutes: Int(parsedBLEData.sensorTimeInMinutes), from: self)
+                
+                // TODO: add sensor start date -> userdefaults
                 
             } catch {
                 
@@ -331,10 +343,20 @@ class CGMLibre2Transmitter:BluetoothTransmitter, CGMTransmitter {
         return nonFixedSlopeEnabled
     }
     
-    func requestNewReading() {
-        // not supported for Libre 2
+    func maxSensorAgeInDays() -> Double? {
+        
+        return libreSensorType?.maxSensorAgeInDays()
+        
     }
     
+    func getCBUUID_Service() -> String {
+        return CBUUID_Service_Libre2
+    }
+    
+    func getCBUUID_Receive() -> String {
+        return CBUUID_ReceiveCharacteristic_Libre2
+    }
+
 }
 
 #else
@@ -349,7 +371,7 @@ class CGMLibre2Transmitter:BluetoothTransmitter, CGMTransmitter {
 // MARK: - LibreNFCDelegate functions
 
 extension CGMLibre2Transmitter: LibreNFCDelegate {
-    
+        
     func received(fram: Data) {
         
         trace("received fram :  %{public}@", log: log, category: ConstantsLog.categoryCGMLibre2, type: .info, fram.toHexString())
@@ -358,12 +380,15 @@ extension CGMLibre2Transmitter: LibreNFCDelegate {
         // same for sensorUID
         if let patchInfo =  UserDefaults.standard.librePatchInfo, let sensorUID = UserDefaults.standard.libreSensorUID, let libreSensorType = LibreSensorType.type(patchInfo: patchInfo.hexEncodedString().uppercased()), let serialNumber = self.sensorSerialNumber {
             
+            self.libreSensorType = libreSensorType
+            
             var framCopy = fram
             
-            if libreSensorType.decryptIfPossibleAndNeeded(rxBuffer: &framCopy, headerLength: 0, log: log, patchInfo: patchInfo.hexEncodedString().uppercased(), uid: sensorUID.bytes) {
+            if libreSensorType.decryptIfPossibleAndNeeded(rxBuffer: &framCopy, headerLength: 0, log: log, patchInfo: patchInfo.hexEncodedString().uppercased(), uid: Array(sensorUID)) {
                 
                 // we have all date to create libre1DerivedAlgorithmParameters
-                UserDefaults.standard.libre1DerivedAlgorithmParameters = Libre1DerivedAlgorithmParameters(bytes: framCopy, serialNumber: serialNumber)
+                UserDefaults.standard.libre1DerivedAlgorithmParameters = Libre1DerivedAlgorithmParameters(bytes: framCopy, serialNumber: serialNumber, libreSensorType: libreSensorType)
+                
                 
             }
             
@@ -394,8 +419,9 @@ extension CGMLibre2Transmitter: LibreNFCDelegate {
                 
                 self.sensorSerialNumber = receivedSensorSerialNumberAsString
                 
-                cgmTransmitterDelegate?.newSensorDetected()
-                
+                // assign sensorStartDate, for this type of transmitter the sensorAge is passed in another call to cgmTransmitterDelegate
+                cgmTransmitterDelegate?.newSensorDetected(sensorStartDate: nil)
+
                 cGMLibre2TransmitterDelegate?.received(serialNumber: receivedSensorSerialNumberAsString, from: self)
 
             }
@@ -424,6 +450,50 @@ extension CGMLibre2Transmitter: LibreNFCDelegate {
             
             trace("received streaming enabled message from NFC with result unsuccessful", log: log, category: ConstantsLog.categoryCGMLibre2, type: .info)
 
+        }
+        
+    }
+    
+    func nfcScanResult(successful: Bool) {
+        
+        if successful {
+            
+            trace("received NFC scan result from NFC with result successful", log: log, category: ConstantsLog.categoryCGMLibre2, type: .info)
+            
+            // only process if userdefaults needs changing to true to avoid triggering the observer unnecessarily
+            if !UserDefaults.standard.nfcScanSuccessful {
+                
+                UserDefaults.standard.nfcScanSuccessful = true
+                
+            }
+            
+        } else {
+            
+            trace("received NFC scan result from NFC with result unsuccessful", log: log, category: ConstantsLog.categoryCGMLibre2, type: .info)
+            
+            // only process if userdefaults needs changing to true to avoid triggering the observer unnecessarily
+            if !UserDefaults.standard.nfcScanFailed {
+                
+                UserDefaults.standard.nfcScanFailed = true
+                
+            }
+            
+        }
+        
+    }
+    
+    func startBLEScanning() {
+        
+        _ = super.startScanning()
+        
+    }
+    
+    func nfcScanExpectedDevice(serialNumber: String, macAddress: String) {
+        
+        if (self.libreSensorType == .libre27F) {
+            self.updateExpectedDeviceName(name: macAddress)
+        } else {
+            self.updateExpectedDeviceName(name: "ABBOTT" + serialNumber)
         }
         
     }

@@ -26,11 +26,20 @@ final class SettingsViewController: UIViewController {
     
     private enum Section: Int, CaseIterable, SettingsProtocol {
         
+        /// help section - open help and offer translation
+        case help
+        
+        /// data source settings - master or follower - if follower, data source
+        case dataSource
+        
         ///General settings - language, glucose unit
         case general
         
         ///Home Screen settings - urgent high, high, target, low and urgent low values for guidelines
         case homescreen
+        
+        /// statistics settings
+        case statistics
         
         /// alarms
         case alarms
@@ -47,11 +56,20 @@ final class SettingsViewController: UIViewController {
         /// store bg values in healthkit
         case speak
         
+        /// Apple Watch settings
+        case appleWatch
+        
+        /// Calendar event settings
+        case calendarEvents
+        
+        /// contact Image settings
+        case contactImage
+        
+        /// housekeeper settings
+        // case housekeeper // let's leave this out for now until an import function is added
+        
         /// M5 stack settings
         case M5stack
-        
-        /// Apple Watch settings
-        case AppleWatch
         
         /// tracing
         case trace
@@ -59,36 +77,48 @@ final class SettingsViewController: UIViewController {
         /// info
         case info
         
-        /// developper settings
+        /// developer settings
         case developer
         
         func viewModel(coreDataManager: CoreDataManager?) -> SettingsViewModelProtocol {
             switch self {
                 
+            case .help:
+                return SettingsViewHelpSettingsViewModel()
+            case .dataSource:
+                return SettingsViewDataSourceSettingsViewModel(coreDataManager: coreDataManager)
             case .general:
-                return SettingsViewGeneralSettingsViewModel(coreDataManager: coreDataManager)
+                return SettingsViewNotificationsSettingsViewModel()
             case .homescreen:
                 return SettingsViewHomeScreenSettingsViewModel()
+            case .statistics:
+                return SettingsViewStatisticsSettingsViewModel()
             case .alarms:
                 return SettingsViewAlertSettingsViewModel()
             case .nightscout:
-                return SettingsViewNightScoutSettingsViewModel()
+                return SettingsViewNightscoutSettingsViewModel()
             case .dexcom:
-                return SettingsViewDexcomSettingsViewModel()
+                return SettingsViewDexcomShareSettingsViewModel()
             case .healthkit:
                 return SettingsViewHealthKitSettingsViewModel()
             case .speak:
                 return SettingsViewSpeakSettingsViewModel()
             case .M5stack:
                 return SettingsViewM5StackSettingsViewModel()
-            case .info:
-                return SettingsViewInfoViewModel()
             case .developer:
                 return SettingsViewDevelopmentSettingsViewModel()
-            case .AppleWatch:
+            case .appleWatch:
                 return SettingsViewAppleWatchSettingsViewModel()
+            case .calendarEvents:
+                return SettingsViewCalendarEventsSettingsViewModel()
+            case .contactImage:
+                return SettingsViewContactImageSettingsViewModel()
+//            case .housekeeper:
+//                return SettingsViewHousekeeperSettingsViewModel(coreDataManager: coreDataManager)
             case .trace:
                 return SettingsViewTraceSettingsViewModel()
+            case .info:
+                return SettingsViewInfoViewModel()
                 
             }
         }
@@ -96,14 +126,45 @@ final class SettingsViewController: UIViewController {
     }
     
 
-    // MARK:- public functions
+    // MARK: - public functions
     
     /// configure
     public func configure(coreDataManager:CoreDataManager?, soundPlayer:SoundPlayer?) {
         
         self.coreDataManager = coreDataManager
         self.soundPlayer = soundPlayer
-        
+       
+        // create messageHandler
+        messageHandler = {
+            (title, message) in
+            
+            // piece of code that we need two times
+            let createAndPresentMessageHandlerUIAlertController = {
+                
+                self.messageHandlerUiAlertController = UIAlertController(title: title, message: message, actionHandler: nil)
+                
+                if let messageHandlerUiAlertController = self.messageHandlerUiAlertController {
+                    self.present(messageHandlerUiAlertController, animated: true, completion: nil)
+                }
+                
+            }
+            
+            // first check if messageHandlerUiAlertController is not nil and is presenting. If it is, dismiss it and when completed call createAndPresentMessageHandlerUIAlertController
+            if let messageHandlerUiAlertController = self.messageHandlerUiAlertController {
+                if messageHandlerUiAlertController.isBeingPresented {
+                    
+                    messageHandlerUiAlertController.dismiss(animated: true, completion: createAndPresentMessageHandlerUIAlertController)
+                    
+                    return
+                    
+                }
+            }
+            
+            // we're here which means there wasn't a messageHandlerUiAlertController being presented, so present it now
+            createAndPresentMessageHandlerUIAlertController()
+            
+        }
+
         // initialize viewModels
         for section in Section.allCases {
 
@@ -118,46 +179,18 @@ final class SettingsViewController: UIViewController {
             // store self as uiViewController in the viewModel
             viewModel.storeUIViewController(uIViewController: self)
             
-            // store reload closure in the viewModel
+            // store row reload closure in the viewModel
             viewModel.storeRowReloadClosure(rowReloadClosure: {row in
-                
                 self.tableView.reloadRows(at: [IndexPath(row: row, section: section.rawValue)], with: .none)
-                    
+            })
+          
+            // store section reload closure in the viewModel
+            viewModel.storeSectionReloadClosure(sectionReloadClosure: { [weak self] in
+                self?.tableView.reloadSections([section.rawValue], with: .none)
             })
 
             // store the viewModel
             self.viewModels.append(viewModel)
-            
-        }
-        
-        // create messageHandler
-        messageHandler = {
-            (title, message) in
-             
-            // piece of code that we need two times
-            let createAndPresentMessageHandlerUIAlertController = {
-                
-                self.messageHandlerUiAlertController = UIAlertController(title: title, message: message, actionHandler: nil)
-                
-                if let messageHandlerUiAlertController = self.messageHandlerUiAlertController {
-                    self.present(messageHandlerUiAlertController, animated: true, completion: nil)
-                }
-                
-            }
-
-            // first check if messageHandlerUiAlertController is not nil and is presenting. If it is, dismiss it and when completed call createAndPresentMessageHandlerUIAlertController
-            if let messageHandlerUiAlertController = self.messageHandlerUiAlertController {
-                if messageHandlerUiAlertController.isBeingPresented {
-
-                    messageHandlerUiAlertController.dismiss(animated: true, completion: createAndPresentMessageHandlerUIAlertController)
-                    
-                    return
-                    
-                }
-            }
-            
-            // we're here which means there wasn't a messageHandlerUiAlertController being presented, so present it now
-            createAndPresentMessageHandlerUIAlertController()
             
         }
         
@@ -205,7 +238,11 @@ final class SettingsViewController: UIViewController {
             if let vc = segue.destination as? TimeScheduleViewController, let sender = sender as? TimeSchedule {
                 vc.configure(timeSchedule: sender)
             }
-            
+
+        case .settingsToLoopDelaySchedule:
+            //nothing to configure
+            break
+
         }
     }
 
@@ -244,6 +281,12 @@ extension SettingsViewController:UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         
         return viewModels[section].sectionTitle()
+
+    }
+    
+    func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
+        
+        return viewModels[section].sectionFooter()
 
     }
     
@@ -310,6 +353,9 @@ extension SettingsViewController {
         
         /// to go from general settings to schedule screen
         case settingsToSchedule = "settingsToSchedule"
+        
+        /// to go from general settings to loop delay schedule
+        case settingsToLoopDelaySchedule = "settingsToLoopDelaySchedule"
         
     }
 }

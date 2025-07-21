@@ -8,6 +8,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     // MARK: - Properties
     
     var window: UIWindow?
+
+    private let quickActionsManager = QuickActionsManager()
+    
+    /// allow the orientation to be changed as per the settings for each individual view controller
+    var restrictRotation:UIInterfaceOrientationMask = .all
     
     private var log = OSLog(subsystem: ConstantsLog.subSystem, category: ConstantsLog.categoryAppDelegate)
     
@@ -19,6 +24,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         return true
         
+    }
+
+    /// used to allow/prevent the specific views from changing orientation when rotating the device
+    func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask
+    {
+        return self.restrictRotation
     }
     
     func applicationWillResignActive(_ application: UIApplication) {
@@ -43,6 +54,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationWillTerminate(_ application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
         // Saves changes in the application's managed object context before the application terminates.
+    }
+  
+    // Handle Quick Actions
+    func application(_ application: UIApplication, performActionFor shortcutItem: UIApplicationShortcutItem, completionHandler: @escaping (Bool) -> Void) {
+        if let quickActionType = QuickActionType(rawValue: shortcutItem.type) {
+            quickActionsManager.handleQuickAction(quickActionType)
+        }
+        
+        completionHandler(true)
     }
 }
 
